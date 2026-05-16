@@ -81,7 +81,7 @@ const GHOST = { padding: "12px 16px", border: "1px solid rgba(168,85,247,0.18)",
 const BACK = { background: "none", border: "none", color: "#a855f7", fontSize: 13, fontFamily: "Georgia,serif", cursor: "pointer", padding: 0 };
 const BADGE = { background: P, borderRadius: 6, padding: "3px 10px", fontSize: 10, letterSpacing: 3, color: "#fff", textTransform: "uppercase" };
 const ERR = { background: "rgba(220,50,50,0.1)", border: "1px solid rgba(220,50,50,0.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: "#f87171", lineHeight: 1.5 };
-const PAGE = { minHeight: "100vh", background: BG, fontFamily: "Georgia,serif", padding: "24px 16px 48px", color: "#ede6ff" };
+const PAGE = { minHeight: "100vh", width: "100%", background: BG, fontFamily: "Georgia,serif", padding: "24px 16px 48px", color: "#ede6ff", boxSizing: "border-box" };
 const BAR = { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 };
 
 export default function App() {
@@ -131,10 +131,23 @@ export default function App() {
     const f = e.target.files[0];
     if (!f) return;
     setImg(URL.createObjectURL(f));
-    setMime(f.type || "image/jpeg");
-    const r = new FileReader();
-    r.onload = () => setB64(r.result.split(",")[1]);
-    r.readAsDataURL(f);
+    // Converte qualquer formato (HEIC, WEBP, PNG, etc) para JPEG via canvas
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const imgEl = new Image();
+      imgEl.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = imgEl.width;
+        canvas.height = imgEl.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(imgEl, 0, 0);
+        const jpeg = canvas.toDataURL("image/jpeg", 0.85);
+        setMime("image/jpeg");
+        setB64(jpeg.split(",")[1]);
+      };
+      imgEl.src = ev.target.result;
+    };
+    reader.readAsDataURL(f);
   };
 
   const clearImg = () => { setImg(null); setB64(null); if (fileRef.current) fileRef.current.value = ""; };
@@ -363,6 +376,9 @@ export default function App() {
       )}
 
       <style>{`
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; background: #08080f; width: 100%; }
+        #__next { width: 100%; }
         textarea::placeholder { color: rgba(109,79,138,0.5); }
         input::placeholder { color: rgba(109,79,138,0.5); }
       `}</style>
