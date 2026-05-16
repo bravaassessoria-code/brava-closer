@@ -1,4 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 const SYSTEM_PROMPT = `Você é o BRAVA CLOSER — um agente de vendas consultivas no WhatsApp para fotografia e filmagem premium.
 
@@ -222,10 +228,17 @@ export default function App() {
           <b style={{ fontSize: 21, color: "#fff" }}>BRAVA</b>
           <span style={BADGE}>Closer</span>
         </div>
-        <button onClick={() => setView("newClient")} style={{
-          background: P, border: "none", borderRadius: 10, color: "#fff",
-          fontSize: 13, fontFamily: "Georgia,serif", cursor: "pointer", padding: "8px 16px",
-        }}>+ Novo cliente</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setView("newClient")} style={{
+            background: P, border: "none", borderRadius: 10, color: "#fff",
+            fontSize: 13, fontFamily: "Georgia,serif", cursor: "pointer", padding: "8px 16px",
+          }}>+ Novo cliente</button>
+          <button onClick={async () => { await supabase.auth.signOut(); window.location.href = "/login"; }} style={{
+            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(168,85,247,0.2)",
+            borderRadius: 10, color: "#6d4f8a", fontSize: 13,
+            fontFamily: "Georgia,serif", cursor: "pointer", padding: "8px 14px",
+          }}>Sair</button>
+        </div>
       </div>
       {clients.length === 0
         ? <div style={{ textAlign: "center", marginTop: 64, color: "#6d4f8a" }}>
