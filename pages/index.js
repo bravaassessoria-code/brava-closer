@@ -251,10 +251,12 @@ export default function App() {
               fontSize: 12, fontFamily: "'Jost',Georgia,serif", fontWeight: 500,
               cursor: "pointer", padding: "8px 14px", letterSpacing: 1,
             }}>+ NOVO</button>
-            <button onClick={setupBiometry} style={{
-              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(168,85,247,0.18)",
-              borderRadius: 9, color: "#a855f7", fontSize: 14, cursor: "pointer", padding: "7px 11px",
-            }}>🔒</button>
+            {typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && (
+  <button style={{
+    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(168,85,247,0.18)",
+    borderRadius: 9, color: "#a855f7", fontSize: 14, cursor: "pointer", padding: "7px 11px",
+  }}>🔒</button>
+)}
             <button onClick={async () => { await supabaseClient.auth.signOut(); window.location.href = "/login"; }} style={{
               background: "rgba(255,255,255,0.04)", border: "1px solid rgba(168,85,247,0.14)",
               borderRadius: 9, color: "#6d4f8a", fontSize: 11, fontFamily: "'Jost',Georgia,serif",
