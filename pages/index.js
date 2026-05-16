@@ -233,6 +233,11 @@ export default function App() {
             background: P, border: "none", borderRadius: 10, color: "#fff",
             fontSize: 13, fontFamily: "Georgia,serif", cursor: "pointer", padding: "8px 16px",
           }}>+ Novo cliente</button>
+          <button onClick={setupBiometry} style={{
+            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(168,85,247,0.2)",
+            borderRadius: 10, color: "#a855f7", fontSize: 13,
+            fontFamily: "Georgia,serif", cursor: "pointer", padding: "8px 14px",
+          }}>🔒</button>
           <button onClick={async () => { await supabase.auth.signOut(); window.location.href = "/login"; }} style={{
             background: "rgba(255,255,255,0.06)", border: "1px solid rgba(168,85,247,0.2)",
             borderRadius: 10, color: "#6d4f8a", fontSize: 13,
