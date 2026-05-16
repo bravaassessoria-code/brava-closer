@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
+const supabaseClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
@@ -76,6 +76,11 @@ const mkClient = (name, type) => ({
   msgs: [],
 });
 
+// Biometria: será implementada via WebAuthn futuramente
+const setupBiometry = () => {
+  alert("🔒 Biometria em breve!\n\nEsta funcionalidade será ativada na próxima versão.");
+};
+
 const P = "linear-gradient(135deg,#6d28d9,#a855f7)";
 const BG = "linear-gradient(160deg,#08080f 0%,#10081e 60%,#08080f 100%)";
 const CARD = { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(168,85,247,0.18)", borderRadius: 16, padding: 16, marginBottom: 12 };
@@ -112,7 +117,7 @@ export default function App() {
   const active = clients.find(c => c.id === activeId) || null;
   const goList = () => { setView("list"); setErr(""); };
 
-  const createClient = () => {
+  const createNewClient = () => {
     if (!newName.trim()) return;
     const c = mkClient(newName, newType);
     setClients(p => [c, ...p]);
@@ -137,7 +142,6 @@ export default function App() {
     const f = e.target.files[0];
     if (!f) return;
     setImg(URL.createObjectURL(f));
-    // Converte qualquer formato (HEIC, WEBP, PNG, etc) para JPEG via canvas
     const reader = new FileReader();
     reader.onload = (ev) => {
       const imgEl = new Image();
@@ -145,8 +149,8 @@ export default function App() {
         const canvas = document.createElement("canvas");
         canvas.width = imgEl.width;
         canvas.height = imgEl.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(imgEl, 0, 0);
+        const c2d = canvas.getContext("2d");
+        c2d.drawImage(imgEl, 0, 0);
         const jpeg = canvas.toDataURL("image/jpeg", 0.85);
         setMime("image/jpeg");
         setB64(jpeg.split(",")[1]);
@@ -203,7 +207,7 @@ export default function App() {
       <div style={CARD}>
         <span style={LBL}>Nome do cliente</span>
         <input style={INP} placeholder="Ex: Ana e Pedro" value={newName}
-          onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && createClient()} autoFocus />
+          onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && createNewClient()} autoFocus />
       </div>
       <div style={{ ...CARD, padding: 4, display: "flex", gap: 4 }}>
         {["casamento", "debutante"].map(t => (
@@ -215,7 +219,7 @@ export default function App() {
           }}>{t === "casamento" ? "💍 Casamento" : "✨ Debutante"}</button>
         ))}
       </div>
-      <button style={BTN(!!newName.trim())} onClick={createClient} disabled={!newName.trim()}>
+      <button style={BTN(!!newName.trim())} onClick={createNewClient} disabled={!newName.trim()}>
         Criar conversa
       </button>
     </div>
@@ -238,7 +242,7 @@ export default function App() {
             borderRadius: 10, color: "#a855f7", fontSize: 13,
             fontFamily: "Georgia,serif", cursor: "pointer", padding: "8px 14px",
           }}>🔒</button>
-          <button onClick={async () => { await supabase.auth.signOut(); window.location.href = "/login"; }} style={{
+          <button onClick={async () => { await supabaseClient.auth.signOut(); window.location.href = "/login"; }} style={{
             background: "rgba(255,255,255,0.06)", border: "1px solid rgba(168,85,247,0.2)",
             borderRadius: 10, color: "#6d4f8a", fontSize: 13,
             fontFamily: "Georgia,serif", cursor: "pointer", padding: "8px 14px",
