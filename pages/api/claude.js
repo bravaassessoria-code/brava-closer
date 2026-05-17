@@ -2,6 +2,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
   const { messages, clientName } = req.body;
+  const nomeCliente = clientName || "Cliente";
 
   const ultimaMensagem = messages[messages.length - 1];
   const textoUsuario = typeof ultimaMensagem.content === "string"
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
         model: "claude-sonnet-4-20250514",
         max_tokens: 150,
         system: `Você é o supervisor de vendas da Brava. Analise e responda APENAS JSON sem markdown: {"agente":"objecoes"|"whatsapp"|"scripts"|"fechamento"}`,
-        messages: [{ role: "user", content: `Cliente: ${clientName}\nSituação: ${textoUsuario}` }]
+        messages: [{ role: "user", content: `Cliente: ${nomeCliente}\nSituação: ${textoUsuario}` }]
       }),
     });
     const supervisorData = await supervisorRes.json();
@@ -34,10 +35,10 @@ export default async function handler(req, res) {
     } catch {}
 
     const sistemas = {
-      objecoes: `Você é especialista em quebra de objeções da Brava Assessoria. Cliente "${clientName}" apresentou objeção. Gere 2 respostas prontas para copiar. Sem emojis. Direto, seguro, sem soar desesperado. Termine sempre conduzindo ao próximo passo.`,
-      whatsapp: `Você é especialista em mensagens de WhatsApp para vendas da Brava Assessoria. Cliente: "${clientName}". Mensagens curtas e diretas. Sem emojis. Termine com pergunta ou ação clara. Gere 2 opções para o closer escolher.`,
-      scripts: `Você é especialista em scripts de venda da Brava Assessoria. Cliente: "${clientName}". Gere roteiro pronto para usar. Indique onde pausar e ouvir. Inclua variações de fechamento no final.`,
-      fechamento: `Você é especialista em fechamento de vendas da Brava Assessoria. Cliente: "${clientName}". Foco total em conduzir ao sim. Valor antes de preço. Direto e seguro. Gere resposta pronta para o momento decisivo.`,
+      objecoes: `Você é especialista em quebra de objeções da Brava Assessoria. Cliente "${nomeCliente}" apresentou objeção. Gere 2 respostas prontas para copiar. Sem emojis. Direto, seguro, sem soar desesperado. Termine sempre conduzindo ao próximo passo.`,
+      whatsapp: `Você é especialista em mensagens de WhatsApp para vendas da Brava Assessoria. Cliente: "${nomeCliente}". Mensagens curtas e diretas. Sem emojis. Termine com pergunta ou ação clara. Gere 2 opções para o closer escolher.`,
+      scripts: `Você é especialista em scripts de venda da Brava Assessoria. Cliente: "${nomeCliente}". Gere roteiro pronto para usar. Indique onde pausar e ouvir. Inclua variações de fechamento no final.`,
+      fechamento: `Você é especialista em fechamento de vendas da Brava Assessoria. Cliente: "${nomeCliente}". Foco total em conduzir ao sim. Valor antes de preço. Direto e seguro. Gere resposta pronta para o momento decisivo.`,
     };
 
     const agenteRes = await fetch("https://api.anthropic.com/v1/messages", {
