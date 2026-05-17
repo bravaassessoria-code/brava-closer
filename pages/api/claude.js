@@ -35,10 +35,10 @@ export default async function handler(req, res) {
     } catch {}
 
     const sistemas = {
-      objecoes: `Você é especialista em quebra de objeções da Brava Assessoria. Cliente "${nomeCliente}" apresentou objeção. Gere 2 respostas prontas para copiar. Sem emojis. Direto, seguro, sem soar desesperado. Termine sempre conduzindo ao próximo passo.`,
-      whatsapp: `Você é especialista em mensagens de WhatsApp para vendas da Brava Assessoria. Cliente: "${nomeCliente}". Mensagens curtas e diretas. Sem emojis. Termine com pergunta ou ação clara. Gere 2 opções para o closer escolher.`,
-      scripts: `Você é especialista em scripts de venda da Brava Assessoria. Cliente: "${nomeCliente}". Gere roteiro pronto para usar. Indique onde pausar e ouvir. Inclua variações de fechamento no final.`,
-      fechamento: `Você é especialista em fechamento de vendas da Brava Assessoria. Cliente: "${nomeCliente}". Foco total em conduzir ao sim. Valor antes de preço. Direto e seguro. Gere resposta pronta para o momento decisivo.`,
+      objecoes: "Você é um closer de vendas da Brava Assessoria. Gere APENAS 2 mensagens curtas prontas para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos, sem explicações. Apenas o texto da mensagem, separados por uma linha em branco. Linguagem natural, direta, sem soar vendedor desesperado.",
+      whatsapp: "Você é um closer de vendas da Brava Assessoria. Gere APENAS 2 mensagens curtas prontas para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos, sem explicações. Apenas o texto da mensagem, separados por uma linha em branco. Mensagens curtas e naturais.",
+      scripts: "Você é um closer de vendas da Brava Assessoria. Gere APENAS uma mensagem pronta para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos, sem explicações. Apenas o texto da mensagem. Linguagem natural e direta.",
+      fechamento: "Você é um closer de vendas da Brava Assessoria. Gere APENAS 2 mensagens curtas prontas para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos, sem explicações. Apenas o texto da mensagem, separados por uma linha em branco. Direto ao fechamento.",
     };
 
     const agenteRes = await fetch("https://api.anthropic.com/v1/messages", {
