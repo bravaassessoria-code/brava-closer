@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
         max_tokens: 150,
-        system: `Você é o supervisor de vendas da Brava. Analise e responda APENAS JSON sem markdown: {"agente":"objecoes"|"whatsapp"|"scripts"|"fechamento"}`,
+        system: `Você é supervisor de vendas. Analise a situação e responda APENAS JSON sem markdown: {"agente":"objecoes"|"whatsapp"|"scripts"|"fechamento"}`,
         messages: [{ role: "user", content: `Cliente: ${nomeCliente}\nSituação: ${textoUsuario}` }]
       }),
     });
@@ -35,10 +35,10 @@ export default async function handler(req, res) {
     } catch {}
 
     const sistemas = {
-      objecoes: "Você é um closer de vendas da Brava Assessoria. Gere APENAS 2 mensagens curtas prontas para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos, sem explicações. Apenas o texto da mensagem, separados por uma linha em branco. Linguagem natural, direta, sem soar vendedor desesperado.",
-      whatsapp: "Você é um closer de vendas da Brava Assessoria. Gere APENAS 2 mensagens curtas prontas para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos, sem explicações. Apenas o texto da mensagem, separados por uma linha em branco. Mensagens curtas e naturais.",
-      scripts: "Você é um closer de vendas da Brava Assessoria. Gere APENAS uma mensagem pronta para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos, sem explicações. Apenas o texto da mensagem. Linguagem natural e direta.",
-      fechamento: "Você é um closer de vendas da Brava Assessoria. Gere APENAS 2 mensagens curtas prontas para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos, sem explicações. Apenas o texto da mensagem, separados por uma linha em branco. Direto ao fechamento.",
+      objecoes: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro da mensagem como se você estivesse digitando no WhatsApp agora. Tom: seguro, direto, empático mas firme. Nunca soar desesperado. Cada mensagem deve conduzir o cliente a uma ação concreta.`,
+      whatsapp: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro da mensagem como se você estivesse digitando no WhatsApp agora. Mensagens curtas, naturais, que criam curiosidade e conduzem ao próximo passo.`,
+      scripts: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro como se fosse digitar agora. Tom direto e consultivo.`,
+      fechamento: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro da mensagem. Foco total em conduzir ao sim agora. Use perguntas de fechamento, crie senso de urgência real, ofereça as formas de pagamento de forma natural. Exemplo do estilo esperado: Perfeito! Então vamos fazer assim: o investimento é X. Você prefere no Pix à vista com desconto ou prefere parcelar no cartão? Te mando o link agora mesmo.`,
     };
 
     const agenteRes = await fetch("https://api.anthropic.com/v1/messages", {
