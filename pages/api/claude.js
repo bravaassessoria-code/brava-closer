@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     const supervisorRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST", headers,
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 150,
         system: `Você é o supervisor de vendas da Brava. Analise e responda APENAS JSON sem markdown: {"agente":"objecoes"|"whatsapp"|"scripts"|"fechamento"}`,
         messages: [{ role: "user", content: `Cliente: ${nomeCliente}\nSituação: ${textoUsuario}` }]
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     const agenteRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST", headers,
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 1024,
         system: `${sistemas[agente] || sistemas.fechamento}\n\nResponda sempre em português brasileiro.`,
         messages: messages.map(m => ({ role: m.role, content: m.content }))
