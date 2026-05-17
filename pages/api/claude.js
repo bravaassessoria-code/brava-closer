@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
         max_tokens: 150,
-        system: `Você é supervisor de vendas. Analise a situação e responda APENAS JSON sem markdown: {"agente":"objecoes"|"whatsapp"|"scripts"|"fechamento"}`,
+        system: `Você é supervisor de vendas. Analise a situação e responda APENAS JSON sem markdown: {"agente":"objecoes"|"whatsapp"|"scripts"|"fechamento"|"marketing"}`,
         messages: [{ role: "user", content: `Cliente: ${nomeCliente}\nSituação: ${textoUsuario}` }]
       }),
     });
@@ -39,6 +39,7 @@ export default async function handler(req, res) {
       whatsapp: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro da mensagem como se você estivesse digitando no WhatsApp agora. Mensagens curtas, naturais, que criam curiosidade e conduzem ao próximo passo.`,
       scripts: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro como se fosse digitar agora. Tom direto e consultivo.`,
       fechamento: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro da mensagem. Foco total em conduzir ao sim agora. Use perguntas de fechamento, crie senso de urgência real, ofereça as formas de pagamento de forma natural. Exemplo do estilo esperado: Perfeito! Então vamos fazer assim: o investimento é X. Você prefere no Pix à vista com desconto ou prefere parcelar no cartão? Te mando o link agora mesmo.`,
+      marketing: `Você é um closer especialista em vendas de fotografia, vídeo e marketing digital da Brava Assessoria. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas texto puro natural como se fosse digitar agora. Tom próximo, confiante e com autoridade no assunto criativo. O cliente busca fotografia, vídeo ou marketing para seu negócio. Conduza para entender a necessidade e agendar uma conversa ou fechar o serviço.`,
     };
 
     const agenteRes = await fetch("https://api.anthropic.com/v1/messages", {
