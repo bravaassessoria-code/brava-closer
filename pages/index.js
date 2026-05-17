@@ -1,699 +1,1301 @@
-import { useState, useRef, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { useState, useEffect, useRef } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import Head from 'next/head';
 
-const supabaseClient = createClient(
+const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-const SYSTEM_PROMPT = `Você é o BRAVA CLOSER — um agente de vendas consultivas no WhatsApp para fotografia e filmagem premium.
-
-PRINCÍPIO CENTRAL: Nunca venda foto ou vídeo. Venda memória, experiência, significado e segurança na decisão. Venda como consequência da experiência. Autoridade sem arrogância. Condução sem pressão.
-
-POSICIONAMENTO: Não competir por preço. Vender memória, não serviço. Especialista, nunca fornecedor. Fechar com autoridade.
-
-REGRAS: Nunca falar de preço primeiro. Nunca proposta sem qualificar. Nunca parecer desesperado. Nunca desconto. Sempre gerar valor antes de números. Sempre terminar com pergunta.
-
-SCRIPTS CASAMENTO:
-- Abertura: "Me conta um pouco do evento: data, local e número de convidados?"
-- Quebra de padrão: "Pra vocês, o que não pode faltar nesse dia?"
-- Posicionamento: "Eu não sou o mais barato, porque não entrego algo comum. Meu foco é criar algo que faça sentido daqui 10, 20 anos."
-- Proposta: "Os valores começam a partir de R$ 8.000, ajusto conforme o que vocês precisam."
-- Fechamento: "Consigo montar algo bem alinhado com o que vocês imaginaram."
-
-FLUXO DEBUTANTE (mais direto):
-- Ensaio Anel: 2h, 30 fotos, maquiagem e cabelo — R$ 5.000
-- Ensaio Coroa: 70 fotos, maquiagem + consultora de imagem — R$ 8.000
-- Festa: making of + cobertura completa + prévias — R$ 8.000
-- Álbum 25x25 / 40 fotos — R$ 2.800 | Álbum 30x30 / 60 fotos — R$ 3.800
-
-OBJEÇÕES: "Tá caro" → valor e longevidade. "Vou pensar" → urgência de agenda. "Vendo outros" → reposicionar, não concorrente.
-
-ESTILO: Curto, natural, sem robô, máximo 2 emojis, sempre terminar com pergunta.
-
-FORMATO: APENAS a mensagem pronta para WhatsApp. Sem título, sem explicação.`;
-
-const REPORT_PROMPT = `Você é o BRAVA CLOSER. Com base no histórico, gere um relatório executivo:
-
-1. RESUMO DO CLIENTE — nome, tipo de evento, data, local
-2. ESTÁGIO DA NEGOCIAÇÃO — onde está no funil
-3. INTERESSES E DESEJOS — o que valoriza
-4. OBJEÇÕES — o que travou ou pode travar
-5. PRÓXIMOS PASSOS — ações concretas
-6. OBSERVAÇÕES ESTRATÉGICAS — perfil do cliente
-
-Formato: claro, direto, profissional, em tópicos.`;
-
-async function askClaude(system, userText, imageB64, mime, maxTokens = 1000) {
-  const content = [];
-  if (imageB64) content.push({ type: "image", source: { type: "base64", media_type: mime || "image/jpeg", data: imageB64 } });
-  content.push({ type: "text", text: userText });
-  const res = await fetch("/api/claude", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, system, messages: [{ role: "user", content }] }),
-  });
-  const json = await res.json();
-  if (json.error) throw new Error(json.error.message);
-  if (!json.content) throw new Error("Resposta vazia");
-  return json.content.map(b => b.text || "").join("").trim();
-}
-
-const mkClient = (name, type) => ({
-  id: String(Date.now()), name: name.trim(), type,
-  date: new Date().toLocaleDateString("pt-BR"), msgs: [],
-});
-
-const isMobile = () =>
-  typeof navigator !== "undefined" &&
-  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-const STORAGE_KEY = "brava_webauthn_credential";
-const buf2b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
-
-// ─── Design tokens ─────────────────────────────────────────
-const G = "linear-gradient(135deg,#7c3aed,#a855f7)";
-const BG = "radial-gradient(ellipse at 50% -10%, #1c0a3e 0%, #07050f 55%)";
-
-const S = {
-  page: { minHeight: "100vh", width: "100%", background: BG, fontFamily: "'Jost',Georgia,serif", padding: "0 0 60px", color: "#ede6ff", boxSizing: "border-box" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 20px", borderBottom: "1px solid rgba(168,85,247,0.1)", background: "rgba(7,5,15,0.8)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 },
-  content: { padding: "20px 16px" },
-  card: { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(168,85,247,0.15)", borderRadius: 16, padding: "16px", marginBottom: 10 },
-  label: { fontSize: 9, letterSpacing: 3, color: "#a855f7", display: "block", marginBottom: 10 },
-  input: { width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(168,85,247,0.18)", borderRadius: 10, padding: "12px 14px", color: "#ede6ff", fontSize: 14, fontFamily: "'Jost',Georgia,serif", outline: "none", boxSizing: "border-box", lineHeight: 1.65 },
-  btnPrimary: (on) => ({ width: "100%", padding: "15px", border: "none", borderRadius: 12, background: on ? G : "rgba(124,58,237,0.15)", color: on ? "#fff" : "rgba(255,255,255,0.2)", fontSize: 13, fontFamily: "'Jost',Georgia,serif", fontWeight: 500, letterSpacing: 2, cursor: on ? "pointer" : "not-allowed", marginBottom: 10, transition: "opacity 0.2s" }),
-  btnGhost: { padding: "12px 16px", border: "1px solid rgba(168,85,247,0.18)", borderRadius: 10, background: "transparent", color: "#6d4f8a", fontSize: 12, fontFamily: "'Jost',Georgia,serif", cursor: "pointer" },
-  btnBack: { background: "none", border: "none", color: "#a855f7", fontSize: 12, fontFamily: "'Jost',Georgia,serif", cursor: "pointer", padding: 0, letterSpacing: 1 },
-  err: { background: "rgba(220,50,50,0.07)", border: "1px solid rgba(220,50,50,0.22)", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: "#f87171", lineHeight: 1.5 },
-  ok: { background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.22)", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: "#86efac", lineHeight: 1.5 },
-  clientName: { fontSize: 15, color: "#fff", marginBottom: 4, fontWeight: 500, fontFamily: "'Cormorant Garamond',serif", letterSpacing: 0.5 },
-  clientMeta: { fontSize: 11, color: "#6d4f8a", letterSpacing: 0.3 },
-  histItem: (isAi) => ({ background: "rgba(255,255,255,0.02)", border: `1px solid rgba(168,85,247,${isAi ? "0.12" : "0.06"})`, borderLeft: `2px solid ${isAi ? "#7c3aed" : "rgba(168,85,247,0.2)"}`, borderRadius: 10, padding: "10px 13px", marginBottom: 7 }),
-  settingRow: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", borderBottom: "1px solid rgba(168,85,247,0.08)", cursor: "pointer" },
-};
-
-const Header = ({ left, right, center }) => (
-  <div style={S.header}>
-    <div style={{ minWidth: 80 }}>{left}</div>
-    {center && <div style={{ textAlign: "center" }}>{center}</div>}
-    <div style={{ minWidth: 80, display: "flex", justifyContent: "flex-end" }}>{right}</div>
-  </div>
-);
-
-const Divider = () => (
-  <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "6px 0 14px" }}>
-    <div style={{ flex: 1, height: 1, background: "rgba(168,85,247,0.1)" }} />
-    <div style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(168,85,247,0.3)" }} />
-    <div style={{ flex: 1, height: 1, background: "rgba(168,85,247,0.1)" }} />
-  </div>
-);
-
-// ─── Ícone engrenagem SVG ───────────────────────────────────
-const GearIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3"/>
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-  </svg>
-);
-
-export default function App() {
+export default function Home() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [clientName, setClientName] = useState('');
+  const [message, setMessage] = useState('');
+  const [conversation, setConversation] = useState([]);
+  const [isThinking, setIsThinking] = useState(false);
   const [clients, setClients] = useState([]);
-  const [activeId, setActiveId] = useState(null);
-  const [view, setView] = useState("list");
-  const [newName, setNewName] = useState("");
-  const [newType, setNewType] = useState("casamento");
-  const [ctx, setCtx] = useState("");
-  const [img, setImg] = useState(null);
-  const [b64, setB64] = useState(null);
-  const [mime, setMime] = useState("image/jpeg");
-  const [resp, setResp] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [err, setErr] = useState("");
-  const [report, setReport] = useState("");
-  const [rLoading, setRLoading] = useState(false);
-  const [rCopied, setRCopied] = useState(false);
-
-  // Settings states
-  const [settingView, setSettingView] = useState(null); // null | 'menu' | 'email' | 'password' | 'username' | 'biometry'
-  const [settingVal, setSettingVal] = useState("");
-  const [settingVal2, setSettingVal2] = useState("");
-  const [settingLoading, setSettingLoading] = useState(false);
-  const [settingErr, setSettingErr] = useState("");
-  const [settingOk, setSettingOk] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [bioRegistered, setBioRegistered] = useState(false);
-
-  const fileRef = useRef();
+  const [activeClient, setActiveClient] = useState(null);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [report, setReport] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState('profile');
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [settingsMsg, setSettingsMsg] = useState('');
+  const [settingsMsgType, setSettingsMsgType] = useState('');
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const chatEndRef = useRef(null);
+  const textareaRef = useRef(null);
 
   useEffect(() => {
-    supabaseClient.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserEmail(user.email || "");
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
     });
-    setBioRegistered(!!localStorage.getItem(STORAGE_KEY));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    checkBiometric();
+    return () => subscription.unsubscribe();
   }, []);
 
-  const active = clients.find(c => c.id === activeId) || null;
-  const goList = () => { setView("list"); setErr(""); };
+  useEffect(() => {
+    if (user) loadClients();
+  }, [user]);
 
-  const openSettings = () => {
-    setSettingView("menu");
-    setSettingVal(""); setSettingVal2("");
-    setSettingErr(""); setSettingOk("");
-  };
-  const closeSettings = () => setSettingView(null);
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversation]);
 
-  // ── Alterar e-mail ────────────────────────────────────────
-  const changeEmail = async () => {
-    if (!settingVal.trim()) { setSettingErr("Informe o novo e-mail."); return; }
-    setSettingLoading(true); setSettingErr(""); setSettingOk("");
-    const { error } = await supabaseClient.auth.updateUser({ email: settingVal.trim() });
-    if (error) { setSettingErr(error.message); }
-    else { setSettingOk("Confirmação enviada para o novo e-mail!"); setUserEmail(settingVal.trim()); }
-    setSettingLoading(false);
-  };
+  async function checkBiometric() {
+    if (window.PublicKeyCredential) {
+      const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      setBiometricAvailable(available);
+    }
+  }
 
-  // ── Alterar senha ─────────────────────────────────────────
-  const changePassword = async () => {
-    if (!settingVal || !settingVal2) { setSettingErr("Preencha os dois campos."); return; }
-    if (settingVal !== settingVal2) { setSettingErr("As senhas não coincidem."); return; }
-    if (settingVal.length < 6) { setSettingErr("Mínimo 6 caracteres."); return; }
-    setSettingLoading(true); setSettingErr(""); setSettingOk("");
-    const { error } = await supabaseClient.auth.updateUser({ password: settingVal });
-    if (error) { setSettingErr(error.message); }
-    else { setSettingOk("Senha alterada com sucesso!"); setSettingVal(""); setSettingVal2(""); }
-    setSettingLoading(false);
-  };
+  async function loadClients() {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false });
+    if (!error && data) setClients(data);
+  }
 
-  // ── Alterar nome de usuário ───────────────────────────────
-  const changeUsername = async () => {
-    if (!settingVal.trim()) { setSettingErr("Informe o novo nome."); return; }
-    setSettingLoading(true); setSettingErr(""); setSettingOk("");
-    const { error } = await supabaseClient.auth.updateUser({
-      data: { display_name: settingVal.trim() }
-    });
-    if (error) { setSettingErr(error.message); }
-    else { setSettingOk("Nome atualizado com sucesso!"); }
-    setSettingLoading(false);
-  };
+  async function saveClientToSupabase(name, messages) {
+    const existing = clients.find(c => c.name === name);
+    if (existing) {
+      const { error } = await supabase
+        .from('clients')
+        .update({ messages: JSON.stringify(messages), updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+      if (!error) loadClients();
+    } else {
+      const { error } = await supabase
+        .from('clients')
+        .insert({ user_id: user.id, name, messages: JSON.stringify(messages), updated_at: new Date().toISOString() });
+      if (!error) loadClients();
+    }
+  }
 
-  // ── Recadastrar biometria ─────────────────────────────────
-  const registerBiometry = async () => {
-    setSettingLoading(true); setSettingErr(""); setSettingOk("");
+  function startNewClient() {
+    if (!clientName.trim()) return;
+    const existing = clients.find(c => c.name.toLowerCase() === clientName.trim().toLowerCase());
+    if (existing) {
+      loadClient(existing);
+      return;
+    }
+    setActiveClient({ name: clientName.trim(), isNew: true });
+    setConversation([]);
+    setShowSidebar(false);
+  }
+
+  function loadClient(client) {
+    setActiveClient(client);
     try {
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      if (!user) { setSettingErr("Usuário não encontrado."); setSettingLoading(false); return; }
-      const challenge = crypto.getRandomValues(new Uint8Array(32));
-      const userId = new TextEncoder().encode(user.id.slice(0, 64));
+      setConversation(JSON.parse(client.messages || '[]'));
+    } catch {
+      setConversation([]);
+    }
+    setClientName(client.name);
+    setShowSidebar(false);
+  }
+
+  async function sendMessage() {
+    if (!message.trim() || isThinking) return;
+    const userMsg = { role: 'user', content: message.trim() };
+    const newConv = [...conversation, userMsg];
+    setConversation(newConv);
+    setMessage('');
+    setIsThinking(true);
+
+    try {
+      const systemPrompt = `Você é um agente closer de vendas de alto nível da Brava Assessoria, especializado em fechar negócios imobiliários e de assessoria financeira. 
+      Você está atendendo o cliente "${activeClient?.name || clientName}".
+      Seja direto, persuasivo, empático e profissional. Use técnicas de fechamento consultivo.
+      Identifique objeções e as supere com inteligência. Sempre conduza a conversa em direção ao fechamento.
+      Responda sempre em português brasileiro.`;
+
+      const res = await fetch('/api/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages: newConv,
+        }),
+      });
+      const data = await res.json();
+      const assistantMsg = {
+        role: 'assistant',
+        content: data.content?.[0]?.text || 'Erro ao gerar resposta.',
+      };
+      const finalConv = [...newConv, assistantMsg];
+      setConversation(finalConv);
+      await saveClientToSupabase(activeClient?.name || clientName, finalConv);
+    } catch (err) {
+      console.error(err);
+    }
+    setIsThinking(false);
+  }
+
+  async function generateReport() {
+    if (conversation.length === 0) return;
+    setIsThinking(true);
+    setShowReport(true);
+    setReport('');
+    try {
+      const res = await fetch('/api/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1500,
+          messages: [
+            {
+              role: 'user',
+              content: `Com base na conversa abaixo com o cliente "${activeClient?.name || clientName}", gere um relatório executivo de negociação com:
+              
+              1. RESUMO DA NEGOCIAÇÃO
+              2. NÍVEL DE INTERESSE DO CLIENTE (0-10)
+              3. OBJEÇÕES IDENTIFICADAS
+              4. PONTOS POSITIVOS
+              5. PRÓXIMOS PASSOS RECOMENDADOS
+              6. PROBABILIDADE DE FECHAMENTO
+              
+              Conversa:
+              ${conversation.map(m => `${m.role === 'user' ? 'Closer' : 'Agente'}: ${m.content}`).join('\n')}`,
+            },
+          ],
+        }),
+      });
+      const data = await res.json();
+      setReport(data.content?.[0]?.text || 'Erro ao gerar relatório.');
+    } catch (err) {
+      console.error(err);
+    }
+    setIsThinking(false);
+  }
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+  }
+
+  async function updateProfile() {
+    setSettingsMsg('');
+    if (newName.trim()) {
+      const { error } = await supabase.auth.updateUser({ data: { full_name: newName.trim() } });
+      if (error) { setSettingsMsg('Erro ao atualizar nome.'); setSettingsMsgType('error'); return; }
+    }
+    if (newEmail.trim()) {
+      const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
+      if (error) { setSettingsMsg('Erro ao atualizar e-mail.'); setSettingsMsgType('error'); return; }
+    }
+    setSettingsMsg('Perfil atualizado com sucesso!');
+    setSettingsMsgType('success');
+    setNewName('');
+    setNewEmail('');
+  }
+
+  async function updatePassword() {
+    setSettingsMsg('');
+    if (!newPassword) { setSettingsMsg('Digite a nova senha.'); setSettingsMsgType('error'); return; }
+    if (newPassword !== confirmPassword) { setSettingsMsg('As senhas não coincidem.'); setSettingsMsgType('error'); return; }
+    if (newPassword.length < 6) { setSettingsMsg('Senha deve ter mínimo 6 caracteres.'); setSettingsMsgType('error'); return; }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) { setSettingsMsg('Erro ao atualizar senha.'); setSettingsMsgType('error'); return; }
+    setSettingsMsg('Senha atualizada com sucesso!');
+    setSettingsMsgType('success');
+    setNewPassword('');
+    setConfirmPassword('');
+  }
+
+  async function handleBiometricSetup() {
+    try {
       const credential = await navigator.credentials.create({
         publicKey: {
-          challenge,
-          rp: { name: "Brava Closer", id: window.location.hostname },
-          user: { id: userId, name: user.email, displayName: user.email },
-          pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-          authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+          challenge: new Uint8Array(32),
+          rp: { name: 'Brava Closer', id: window.location.hostname },
+          user: {
+            id: new Uint8Array(16),
+            name: user?.email || 'user',
+            displayName: user?.user_metadata?.full_name || user?.email || 'Usuário',
+          },
+          pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+          authenticatorSelection: {
+            authenticatorAttachment: 'platform',
+            userVerification: 'required',
+          },
           timeout: 60000,
         },
       });
       if (credential) {
-        localStorage.setItem(STORAGE_KEY, buf2b64(credential.rawId));
-        setBioRegistered(true);
-        setSettingOk("Face ID / Digital cadastrado com sucesso!");
+        localStorage.setItem('brava_biometric_id', credential.id);
+        setSettingsMsg('Biometria configurada com sucesso!');
+        setSettingsMsgType('success');
       }
-    } catch (e) {
-      setSettingErr("Não foi possível cadastrar a biometria. Tente novamente.");
+    } catch (err) {
+      setSettingsMsg('Erro ao configurar biometria: ' + err.message);
+      setSettingsMsgType('error');
     }
-    setSettingLoading(false);
-  };
+  }
 
-  const removeBiometry = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setBioRegistered(false);
-    setSettingOk("Biometria removida.");
-  };
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
 
-  const createNewClient = () => {
-    if (!newName.trim()) return;
-    const c = mkClient(newName, newType);
-    setClients(p => [c, ...p]);
-    setActiveId(c.id); setNewName(""); setCtx(""); setResp(""); setErr("");
-    setImg(null); setB64(null); setView("chat");
-  };
+  function autoResize(e) {
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+  }
 
-  const openClient = (id) => {
-    setActiveId(id); setCtx(""); setResp(""); setErr("");
-    setImg(null); setB64(null); setView("chat");
-  };
-
-  const delClient = (id, e) => {
-    e.stopPropagation();
-    setClients(p => p.filter(c => c.id !== id));
-    if (activeId === id) goList();
-  };
-
-  const handleImg = (e) => {
-    const f = e.target.files[0]; if (!f) return;
-    setImg(URL.createObjectURL(f));
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const imgEl = new Image();
-      imgEl.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = imgEl.width; canvas.height = imgEl.height;
-        const c2d = canvas.getContext("2d");
-        c2d.drawImage(imgEl, 0, 0);
-        const jpeg = canvas.toDataURL("image/jpeg", 0.85);
-        setMime("image/jpeg"); setB64(jpeg.split(",")[1]);
-      };
-      imgEl.src = ev.target.result;
-    };
-    reader.readAsDataURL(f);
-  };
-
-  const clearImg = () => { setImg(null); setB64(null); if (fileRef.current) fileRef.current.value = ""; };
-  const history = (msgs) => msgs.map(m => `[${m.r === "u" ? "CONTEXTO" : "RESPOSTA"}]: ${m.t}`).join("\n\n");
-
-  const generate = async () => {
-    if (!ctx.trim() && !b64) return;
-    setLoading(true); setResp(""); setErr(""); setCopied(false);
-    const hist = history(active.msgs);
-    const histNote = hist ? `\n\nHISTÓRICO:\n${hist}\n\n---\n` : "";
-    const txt = `Cliente: ${active.name} | Evento: ${active.type.toUpperCase()}${histNote}\nSituação: ${ctx.trim() || "[ver print]"}\n\nGere a resposta para WhatsApp.`;
-    try {
-      const text = await askClaude(SYSTEM_PROMPT, txt, b64, mime);
-      setResp(text);
-      const ts = new Date().toLocaleString("pt-BR");
-      setClients(p => p.map(c => c.id === activeId ? {
-        ...c, msgs: [...c.msgs, { r: "u", t: ctx.trim() || "[print]", ts }, { r: "a", t: text, ts }],
-      } : c));
-    } catch (e) { setErr(e.message); }
-    setLoading(false);
-  };
-
-  const genReport = async () => {
-    if (!active.msgs.length) { setReport("Nenhuma conversa ainda."); return; }
-    setRLoading(true); setReport("");
-    try {
-      const txt = `Cliente: ${active.name} | Tipo: ${active.type}\n\n${history(active.msgs)}`;
-      const text = await askClaude(REPORT_PROMPT, txt, null, null, 1500);
-      setReport(text);
-    } catch (e) { setReport("Erro: " + e.message); }
-    setRLoading(false);
-  };
-
-  const copy = (t, fn) => { navigator.clipboard.writeText(t); fn(true); setTimeout(() => fn(false), 2500); };
-
-  // ── MODAL Configurações ─────────────────────────────────────
-  const SettingsModal = () => {
-    if (!settingView) return null;
+  if (loading) {
     return (
-      <div style={{
-        position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)",
-        zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center",
-      }} onClick={(e) => { if (e.target === e.currentTarget) closeSettings(); }}>
-        <div style={{
-          width: "100%", maxWidth: 480,
-          background: "#0e0820", border: "1px solid rgba(168,85,247,0.2)",
-          borderRadius: "20px 20px 0 0", padding: "24px 20px 40px",
-          animation: "slideUp 0.25s ease",
-        }}>
-          {/* Handle */}
-          <div style={{ width: 40, height: 4, background: "rgba(168,85,247,0.3)", borderRadius: 4, margin: "0 auto 20px" }} />
-
-          {settingView === "menu" && (
-            <>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                <p style={{ fontSize: 11, color: "#a855f7", letterSpacing: 3 }}>CONFIGURAÇÕES</p>
-                <p style={{ fontSize: 11, color: "rgba(168,85,247,0.4)", letterSpacing: 0.5 }}>{userEmail}</p>
-              </div>
-
-              {[
-                { icon: "👤", label: "Alterar nome de usuário", sub: "Mude como você aparece no app", action: "username" },
-                { icon: "✉️", label: "Alterar e-mail", sub: "Atualize seu endereço de acesso", action: "email" },
-                { icon: "🔑", label: "Alterar senha", sub: "Redefina sua senha de acesso", action: "password" },
-                ...(isMobile() ? [{ icon: bioRegistered ? "🔓" : "🔒", label: bioRegistered ? "Rediagnosticar Face ID" : "Cadastrar Face ID / Digital", sub: bioRegistered ? "Recadastre sua biometria" : "Ative o acesso biométrico", action: "biometry" }] : []),
-              ].map((item) => (
-                <div key={item.action} style={S.settingRow} onClick={() => {
-                  setSettingVal(""); setSettingVal2(""); setSettingErr(""); setSettingOk("");
-                  setSettingView(item.action);
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <div style={{ fontSize: 22, width: 36, textAlign: "center" }}>{item.icon}</div>
-                    <div>
-                      <div style={{ fontSize: 14, color: "#ede6ff", marginBottom: 2 }}>{item.label}</div>
-                      <div style={{ fontSize: 11, color: "#6d4f8a" }}>{item.sub}</div>
-                    </div>
-                  </div>
-                  <span style={{ color: "#a855f7", fontSize: 18 }}>›</span>
-                </div>
-              ))}
-
-              <div style={{ marginTop: 20 }}>
-                <button onClick={async () => { await supabaseClient.auth.signOut(); window.location.href = "/login"; }}
-                  style={{ width: "100%", padding: 14, border: "1px solid rgba(220,50,50,0.25)", borderRadius: 12, background: "rgba(220,50,50,0.06)", color: "#f87171", fontSize: 13, fontFamily: "'Jost',Georgia,serif", letterSpacing: 1, cursor: "pointer" }}>
-                  SAIR DA CONTA
-                </button>
-              </div>
-            </>
-          )}
-
-          {settingView === "username" && (
-            <>
-              <button style={S.btnBack} onClick={() => setSettingView("menu")}>← VOLTAR</button>
-              <p style={{ fontSize: 11, color: "#a855f7", letterSpacing: 3, margin: "16px 0 20px" }}>ALTERAR NOME</p>
-              <span style={S.label}>NOVO NOME</span>
-              <input style={{ ...S.input, marginBottom: 16 }} placeholder="Seu nome no app"
-                value={settingVal} onChange={e => setSettingVal(e.target.value)} />
-              {settingErr && <div style={S.err}>{settingErr}</div>}
-              {settingOk && <div style={S.ok}>✓ {settingOk}</div>}
-              <button style={S.btnPrimary(!settingLoading)} onClick={changeUsername} disabled={settingLoading}>
-                {settingLoading ? "SALVANDO..." : "SALVAR NOME"}
-              </button>
-            </>
-          )}
-
-          {settingView === "email" && (
-            <>
-              <button style={S.btnBack} onClick={() => setSettingView("menu")}>← VOLTAR</button>
-              <p style={{ fontSize: 11, color: "#a855f7", letterSpacing: 3, margin: "16px 0 20px" }}>ALTERAR E-MAIL</p>
-              <span style={S.label}>E-MAIL ATUAL</span>
-              <div style={{ ...S.input, marginBottom: 14, color: "rgba(168,85,247,0.5)", cursor: "default" }}>{userEmail}</div>
-              <span style={S.label}>NOVO E-MAIL</span>
-              <input style={{ ...S.input, marginBottom: 16 }} type="email" placeholder="novo@email.com"
-                value={settingVal} onChange={e => setSettingVal(e.target.value)} />
-              {settingErr && <div style={S.err}>{settingErr}</div>}
-              {settingOk && <div style={S.ok}>✓ {settingOk}</div>}
-              <button style={S.btnPrimary(!settingLoading)} onClick={changeEmail} disabled={settingLoading}>
-                {settingLoading ? "SALVANDO..." : "ALTERAR E-MAIL"}
-              </button>
-            </>
-          )}
-
-          {settingView === "password" && (
-            <>
-              <button style={S.btnBack} onClick={() => setSettingView("menu")}>← VOLTAR</button>
-              <p style={{ fontSize: 11, color: "#a855f7", letterSpacing: 3, margin: "16px 0 20px" }}>ALTERAR SENHA</p>
-              <span style={S.label}>NOVA SENHA</span>
-              <input style={{ ...S.input, marginBottom: 14 }} type="password" placeholder="Mínimo 6 caracteres"
-                value={settingVal} onChange={e => setSettingVal(e.target.value)} />
-              <span style={S.label}>CONFIRMAR SENHA</span>
-              <input style={{ ...S.input, marginBottom: 16 }} type="password" placeholder="Repita a senha"
-                value={settingVal2} onChange={e => setSettingVal2(e.target.value)} />
-              {settingErr && <div style={S.err}>{settingErr}</div>}
-              {settingOk && <div style={S.ok}>✓ {settingOk}</div>}
-              <button style={S.btnPrimary(!settingLoading)} onClick={changePassword} disabled={settingLoading}>
-                {settingLoading ? "SALVANDO..." : "ALTERAR SENHA"}
-              </button>
-            </>
-          )}
-
-          {settingView === "biometry" && (
-            <>
-              <button style={S.btnBack} onClick={() => setSettingView("menu")}>← VOLTAR</button>
-              <p style={{ fontSize: 11, color: "#a855f7", letterSpacing: 3, margin: "16px 0 20px" }}>BIOMETRIA</p>
-              <div style={{ textAlign: "center", marginBottom: 24 }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>{bioRegistered ? "🔓" : "🔒"}</div>
-                <p style={{ fontSize: 13, color: "#6d4f8a", lineHeight: 1.7 }}>
-                  {bioRegistered
-                    ? "Face ID / Digital está ativo. Você pode recadastrar ou remover."
-                    : "Cadastre seu Face ID ou digital para acessar o app sem digitar senha."}
-                </p>
-              </div>
-              {settingErr && <div style={S.err}>{settingErr}</div>}
-              {settingOk && <div style={S.ok}>✓ {settingOk}</div>}
-              <button style={S.btnPrimary(!settingLoading)} onClick={registerBiometry} disabled={settingLoading}>
-                {settingLoading ? "AGUARDE..." : bioRegistered ? "RECADASTRAR BIOMETRIA" : "CADASTRAR FACE ID / DIGITAL"}
-              </button>
-              {bioRegistered && (
-                <button onClick={removeBiometry} style={{ width: "100%", padding: 13, border: "1px solid rgba(220,50,50,0.2)", borderRadius: 12, background: "transparent", color: "#f87171", fontSize: 12, fontFamily: "'Jost',Georgia,serif", letterSpacing: 1, cursor: "pointer", marginTop: 8 }}>
-                  REMOVER BIOMETRIA
-                </button>
-              )}
-            </>
-          )}
+      <div style={styles.loadingScreen}>
+        <div style={styles.loadingLogo}>B</div>
+        <div style={styles.loadingDots}>
+          <span /><span /><span />
         </div>
       </div>
     );
-  };
+  }
 
-  // ── VIEW: Novo cliente ───────────────────────────────────────
-  if (view === "newClient") return (
-    <div style={S.page}>
-      <style>{globalStyle}</style>
-      <Header left={<button style={S.btnBack} onClick={goList}>← VOLTAR</button>} right={<Logo />} />
-      <div style={S.content}>
-        <p style={{ fontSize: 11, color: "rgba(168,85,247,0.5)", letterSpacing: 2, marginBottom: 20 }}>NOVO CLIENTE</p>
-        <div style={S.card}>
-          <span style={S.label}>NOME DO CLIENTE</span>
-          <input style={S.input} placeholder="Ex: Ana e Pedro" value={newName}
-            onChange={e => setNewName(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && createNewClient()} autoFocus />
-        </div>
-        <div style={{ ...S.card, padding: 5, display: "flex", gap: 4 }}>
-          {["casamento", "debutante"].map(t => (
-            <button key={t} onClick={() => setNewType(t)} style={{
-              flex: 1, padding: "11px 10px", border: "none", borderRadius: 12, cursor: "pointer",
-              background: newType === t ? G : "transparent",
-              color: newType === t ? "#fff" : "#6d4f8a",
-              fontSize: 13, fontFamily: "'Jost',Georgia,serif", letterSpacing: 1,
-            }}>{t === "casamento" ? "💍 Casamento" : "✨ Debutante"}</button>
-          ))}
-        </div>
-        <div style={{ height: 8 }} />
-        <button style={S.btnPrimary(!!newName.trim())} onClick={createNewClient} disabled={!newName.trim()}>
-          CRIAR CONVERSA
-        </button>
-      </div>
-    </div>
-  );
+  if (!user) {
+    if (typeof window !== 'undefined') window.location.href = '/login';
+    return null;
+  }
 
-  // ── VIEW: Lista de clientes ──────────────────────────────────
-  if (view === "list") return (
-    <div style={S.page}>
-      <style>{globalStyle}</style>
-      <SettingsModal />
-      <Header
-        left={<Logo />}
-        right={
-          <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={() => setView("newClient")} style={{
-              background: G, border: "none", borderRadius: 9, color: "#fff",
-              fontSize: 12, fontFamily: "'Jost',Georgia,serif", fontWeight: 500,
-              cursor: "pointer", padding: "8px 14px", letterSpacing: 1,
-            }}>+ NOVO</button>
-            <button onClick={openSettings} style={{
-              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(168,85,247,0.18)",
-              borderRadius: 9, color: "#a855f7", cursor: "pointer",
-              padding: "7px 11px", display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <GearIcon />
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Closer';
+
+  return (
+    <>
+      <Head>
+        <title>Brava Closer</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+      </Head>
+
+      <style>{`
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0a0a0f; font-family: 'Jost', sans-serif; color: #e8e0d5; overflow: hidden; height: 100vh; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(168,85,247,0.3); border-radius: 2px; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes dotBounce { 0%,80%,100% { transform: scale(0); } 40% { transform: scale(1); } }
+        
+        .msg-bubble { animation: fadeIn 0.3s ease forwards; }
+        .thinking-dot { animation: dotBounce 1.4s infinite ease-in-out both; }
+        .thinking-dot:nth-child(1) { animation-delay: -0.32s; }
+        .thinking-dot:nth-child(2) { animation-delay: -0.16s; }
+        .sidebar-open { animation: slideIn 0.25s ease forwards; }
+        .modal-open { animation: modalIn 0.25s ease forwards; }
+        
+        textarea { resize: none; outline: none; border: none; background: transparent; font-family: 'Jost', sans-serif; }
+        input { outline: none; font-family: 'Jost', sans-serif; }
+        button { cursor: pointer; font-family: 'Jost', sans-serif; }
+        
+        @media (max-width: 600px) {
+          .desktop-only { display: none !important; }
+        }
+      `}</style>
+
+      <div style={styles.app}>
+
+        {/* HEADER */}
+        <header style={styles.header}>
+          <div style={styles.headerLeft}>
+            <button style={styles.menuBtn} onClick={() => setShowSidebar(!showSidebar)} aria-label="Menu">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
+            </button>
+            <div style={styles.logo}>
+              <span style={styles.logoB}>B</span>
+              <span style={styles.logoText}>rava</span>
+              <span style={styles.logoDivider}>·</span>
+              <span style={styles.logoCloser}>Closer</span>
+            </div>
+          </div>
+
+          <div style={styles.headerRight}>
+            {activeClient && (
+              <div style={styles.activeClientBadge}>
+                <div style={styles.activeDot} />
+                <span style={styles.activeClientName}>{activeClient.name}</span>
+              </div>
+            )}
+            <button style={styles.iconBtn} onClick={() => { setShowSettings(true); setSettingsMsg(''); }} aria-label="Configurações">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
+            <button style={styles.iconBtn} onClick={handleSignOut} aria-label="Sair">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
             </button>
           </div>
-        }
-      />
-      <div style={S.content}>
-        {clients.length === 0 ? (
-          <div style={{ textAlign: "center", marginTop: 72, color: "#6d4f8a" }}>
-            <div style={{ fontSize: 42, marginBottom: 14, opacity: 0.5 }}>💬</div>
-            <p style={{ fontSize: 14, lineHeight: 1.8, color: "rgba(168,85,247,0.4)" }}>
-              Nenhum cliente ainda.<br />Toque em <span style={{ color: "#a855f7" }}>+ NOVO</span> para começar.
-            </p>
-          </div>
-        ) : (
-          <>
-            <p style={{ fontSize: 9, color: "rgba(168,85,247,0.4)", letterSpacing: 3, marginBottom: 14 }}>
-              {clients.length} {clients.length === 1 ? "CLIENTE" : "CLIENTES"}
-            </p>
-            {clients.map(c => (
-              <div key={c.id} style={{ ...S.card, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={() => openClient(c.id)}>
-                <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-                  <div style={{
-                    width: 40, height: 40, borderRadius: "50%",
-                    background: "linear-gradient(135deg,rgba(124,58,237,0.3),rgba(168,85,247,0.15))",
-                    border: "1px solid rgba(168,85,247,0.25)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 16, flexShrink: 0,
-                  }}>
-                    {c.type === "casamento" ? "💍" : "✨"}
-                  </div>
+        </header>
+
+        {/* SIDEBAR */}
+        {showSidebar && (
+          <div style={styles.sidebarOverlay} onClick={() => setShowSidebar(false)}>
+            <div style={styles.sidebar} className="sidebar-open" onClick={e => e.stopPropagation()}>
+              <div style={styles.sidebarHeader}>
+                <div style={styles.sidebarUserInfo}>
+                  <div style={styles.avatarCircle}>{userName[0].toUpperCase()}</div>
                   <div>
-                    <div style={S.clientName}>{c.name}</div>
-                    <div style={S.clientMeta}>{c.type} · {c.date} · {Math.floor(c.msgs.length / 2)} interações</div>
+                    <div style={styles.sidebarUserName}>{userName}</div>
+                    <div style={styles.sidebarUserEmail}>{user.email}</div>
                   </div>
                 </div>
-                <button onClick={e => delClient(c.id, e)}
-                  style={{ background: "none", border: "none", color: "rgba(255,255,255,0.1)", fontSize: 17, cursor: "pointer", padding: "4px 8px" }}>✕</button>
               </div>
-            ))}
-          </>
-        )}
-      </div>
-    </div>
-  );
 
-  if (!active) { goList(); return null; }
+              <div style={styles.sidebarSection}>
+                <div style={styles.sidebarSectionTitle}>NOVO CLIENTE</div>
+                <div style={styles.newClientRow}>
+                  <input
+                    style={styles.sidebarInput}
+                    placeholder="Nome do cliente..."
+                    value={clientName}
+                    onChange={e => setClientName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && startNewClient()}
+                  />
+                  <button style={styles.addBtn} onClick={startNewClient}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
 
-  // ── VIEW: Relatório ──────────────────────────────────────────
-  if (view === "report") return (
-    <div style={S.page}>
-      <style>{globalStyle}</style>
-      <Header
-        left={<button style={S.btnBack} onClick={() => setView("chat")}>← VOLTAR</button>}
-        center={
-          <div>
-            <div style={{ fontSize: 14, color: "#fff", fontWeight: 500, fontFamily: "'Cormorant Garamond',serif", letterSpacing: 1 }}>{active.name}</div>
-            <div style={{ fontSize: 10, color: "#6d4f8a", letterSpacing: 1 }}>{active.type.toUpperCase()}</div>
-          </div>
-        }
-        right={<div />}
-      />
-      <div style={S.content}>
-        <p style={{ fontSize: 11, color: "rgba(168,85,247,0.5)", letterSpacing: 2, marginBottom: 18 }}>RELATÓRIO EXECUTIVO</p>
-        {!report ? (
-          <button style={S.btnPrimary(true)} onClick={genReport} disabled={rLoading}>
-            {rLoading ? "GERANDO..." : "✦ GERAR RELATÓRIO"}
-          </button>
-        ) : (
-          <div style={S.card}>
-            <div style={{ fontSize: 13, lineHeight: 1.9, color: "#ede6ff", whiteSpace: "pre-wrap", marginBottom: 16 }}>{report}</div>
-            <Divider />
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => copy(report, setRCopied)} style={{
-                flex: 1, padding: 12, border: "none", borderRadius: 10, cursor: "pointer",
-                background: rCopied ? "rgba(34,197,94,0.12)" : G,
-                color: rCopied ? "#86efac" : "#fff", fontSize: 13,
-                fontFamily: "'Jost',Georgia,serif", letterSpacing: 1,
-              }}>{rCopied ? "✓ COPIADO" : "📋 COPIAR RELATÓRIO"}</button>
-              <button onClick={() => setReport("")} style={S.btnGhost}>Refazer</button>
+              {clients.length > 0 && (
+                <div style={styles.sidebarSection}>
+                  <div style={styles.sidebarSectionTitle}>HISTÓRICO</div>
+                  <div style={styles.clientList}>
+                    {clients.map(client => (
+                      <button
+                        key={client.id}
+                        style={{
+                          ...styles.clientItem,
+                          ...(activeClient?.id === client.id ? styles.clientItemActive : {}),
+                        }}
+                        onClick={() => loadClient(client)}
+                      >
+                        <div style={styles.clientItemDot} />
+                        <div>
+                          <div style={styles.clientItemName}>{client.name}</div>
+                          <div style={styles.clientItemDate}>
+                            {new Date(client.updated_at).toLocaleDateString('pt-BR')}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
-        {active.msgs.length > 0 && (
-          <div style={{ marginTop: 20 }}>
-            <span style={S.label}>HISTÓRICO COMPLETO</span>
-            {active.msgs.map((m, i) => (
-              <div key={i} style={S.histItem(m.r === "a")}>
-                <div style={{ fontSize: 9, color: "#6d4f8a", marginBottom: 5, letterSpacing: 1 }}>{m.r === "a" ? "RESPOSTA" : "CONTEXTO"} · {m.ts}</div>
-                <div style={{ fontSize: 12, color: "#ede6ff", lineHeight: 1.65 }}>{m.t}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
-  // ── VIEW: Chat ───────────────────────────────────────────────
-  const canGen = !loading && (!!ctx.trim() || !!b64);
-  return (
-    <div style={S.page}>
-      <style>{globalStyle}</style>
-      <Header
-        left={<button style={S.btnBack} onClick={goList}>← CLIENTES</button>}
-        center={
-          <div>
-            <div style={{ fontSize: 15, color: "#fff", fontWeight: 500, fontFamily: "'Cormorant Garamond',serif", letterSpacing: 1 }}>{active.name}</div>
-            <div style={{ fontSize: 10, color: "#6d4f8a", letterSpacing: 0.5 }}>
-              {active.type === "casamento" ? "💍" : "✨"} {active.type} · {Math.floor(active.msgs.length / 2)} interações
-            </div>
-          </div>
-        }
-        right={
-          <button onClick={() => { setReport(""); setView("report"); }} style={{
-            background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)",
-            borderRadius: 8, color: "#a855f7", fontSize: 11,
-            fontFamily: "'Jost',Georgia,serif", cursor: "pointer", padding: "7px 12px", letterSpacing: 1,
-          }}>RELATÓRIO</button>
-        }
-      />
-      <div style={S.content}>
-        <div style={S.card}>
-          <span style={S.label}>PRINT DA CONVERSA</span>
-          {img ? (
-            <div style={{ position: "relative", marginBottom: 14 }}>
-              <img src={img} alt="print" style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 10, display: "block" }} />
-              <button onClick={clearImg} style={{
-                position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.7)",
-                border: "none", borderRadius: 20, color: "#fff", fontSize: 11, padding: "4px 10px", cursor: "pointer",
-              }}>✕ remover</button>
+        {/* MAIN CONTENT */}
+        <main style={styles.main}>
+
+          {/* EMPTY STATE */}
+          {!activeClient ? (
+            <div style={styles.emptyState}>
+              <div style={styles.emptyLogo}>
+                <span style={{ fontFamily: 'Cormorant Garamond', fontSize: 72, fontWeight: 300, color: 'rgba(168,85,247,0.15)', letterSpacing: -2 }}>B</span>
+              </div>
+              <h1 style={styles.emptyTitle}>Brava Closer</h1>
+              <p style={styles.emptySubtitle}>Seu agente de fechamento inteligente</p>
+              <div style={styles.emptyHint}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(168,85,247,0.6)" strokeWidth="1.5">
+                  <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+                <span>Abra o menu e inicie com um cliente</span>
+              </div>
             </div>
           ) : (
-            <div onClick={() => fileRef.current.click()} style={{
-              border: "1.5px dashed rgba(168,85,247,0.22)", borderRadius: 12,
-              padding: 22, textAlign: "center", cursor: "pointer",
-              background: "rgba(168,85,247,0.02)", marginBottom: 14,
-            }}>
-              <div style={{ fontSize: 26, marginBottom: 7 }}>📱</div>
-              <div style={{ fontSize: 12, color: "rgba(168,85,247,0.45)", letterSpacing: 0.5 }}>Toque para enviar o print</div>
-            </div>
+            <>
+              {/* CONVERSATION */}
+              <div style={styles.chatArea}>
+                {conversation.length === 0 && (
+                  <div style={styles.chatWelcome}>
+                    <p style={styles.chatWelcomeTitle}>
+                      Atendendo <em>{activeClient.name}</em>
+                    </p>
+                    <p style={styles.chatWelcomeHint}>Descreva a situação do cliente para começar</p>
+                  </div>
+                )}
+
+                {conversation.map((msg, i) => (
+                  <div
+                    key={i}
+                    className="msg-bubble"
+                    style={{
+                      ...styles.msgRow,
+                      justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    }}
+                  >
+                    {msg.role === 'assistant' && (
+                      <div style={styles.agentAvatar}>A</div>
+                    )}
+                    <div style={{
+                      ...styles.bubble,
+                      ...(msg.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant),
+                    }}>
+                      {msg.content.split('\n').map((line, j) => (
+                        <span key={j}>{line}{j < msg.content.split('\n').length - 1 && <br />}</span>
+                      ))}
+                    </div>
+                    {msg.role === 'user' && (
+                      <div style={styles.userAvatar}>{userName[0].toUpperCase()}</div>
+                    )}
+                  </div>
+                ))}
+
+                {isThinking && !showReport && (
+                  <div style={styles.msgRow}>
+                    <div style={styles.agentAvatar}>A</div>
+                    <div style={styles.thinkingBubble}>
+                      <div className="thinking-dot" style={styles.dot} />
+                      <div className="thinking-dot" style={styles.dot} />
+                      <div className="thinking-dot" style={styles.dot} />
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* INPUT AREA */}
+              <div style={styles.inputArea}>
+                {conversation.length > 0 && (
+                  <button style={styles.reportBtn} onClick={generateReport}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    Relatório
+                  </button>
+                )}
+                <div style={styles.inputBox}>
+                  <textarea
+                    ref={textareaRef}
+                    style={styles.textarea}
+                    placeholder="Digite sua mensagem..."
+                    value={message}
+                    onChange={e => { setMessage(e.target.value); autoResize(e); }}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                  />
+                  <button
+                    style={{ ...styles.sendBtn, opacity: message.trim() ? 1 : 0.4 }}
+                    onClick={sendMessage}
+                    disabled={!message.trim() || isThinking}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                  </button>
+                </div>
+                <div style={styles.inputHint}>Enter para enviar · Shift+Enter para nova linha</div>
+              </div>
+            </>
           )}
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImg} />
-          <Divider />
-          <span style={{ ...S.label, marginTop: 4 }}>OU DESCREVA A SITUAÇÃO</span>
-          <textarea value={ctx} onChange={e => setCtx(e.target.value)}
-            placeholder={active.type === "debutante" ? "Ex: Perguntou sobre Anel e Coroa..." : "Ex: Disse que está caro e vai pensar..."}
-            rows={3} style={{ ...S.input, resize: "vertical", lineHeight: 1.65 }} />
-        </div>
+        </main>
 
-        {err && <div style={S.err}>⚠️ {err}</div>}
-
-        <button style={S.btnPrimary(canGen)} onClick={generate} disabled={!canGen}>
-          {loading ? "GERANDO..." : "✦ GERAR RESPOSTA"}
-        </button>
-
-        {resp && (
-          <div style={S.card}>
-            <span style={{ ...S.label, marginBottom: 12 }}>✓ RESPOSTA PRONTA</span>
-            <div style={{
-              background: "rgba(0,0,0,0.25)", borderRadius: 12, padding: "14px 16px",
-              fontSize: 14, lineHeight: 1.85, color: "#ede6ff", whiteSpace: "pre-wrap",
-              marginBottom: 14, borderLeft: "2px solid #7c3aed",
-            }}>{resp}</div>
-            <Divider />
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => copy(resp, setCopied)} style={{
-                flex: 1, padding: 13, border: "none", borderRadius: 10, cursor: "pointer",
-                background: copied ? "rgba(34,197,94,0.12)" : G,
-                color: copied ? "#86efac" : "#fff", fontSize: 13,
-                fontFamily: "'Jost',Georgia,serif", letterSpacing: 1,
-              }}>{copied ? "✓ COPIADO" : "📋 COPIAR MENSAGEM"}</button>
-              <button onClick={() => { setCtx(""); clearImg(); setResp(""); setErr(""); }} style={S.btnGhost}>Nova</button>
+        {/* REPORT MODAL */}
+        {showReport && (
+          <div style={styles.modalOverlay} onClick={() => setShowReport(false)}>
+            <div style={styles.modal} className="modal-open" onClick={e => e.stopPropagation()}>
+              <div style={styles.modalHeader}>
+                <h2 style={styles.modalTitle}>Relatório de Negociação</h2>
+                <button style={styles.modalClose} onClick={() => setShowReport(false)}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+              <div style={styles.modalBody}>
+                {isThinking && !report ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: 40, gap: 8 }}>
+                    <div className="thinking-dot" style={styles.dot} />
+                    <div className="thinking-dot" style={styles.dot} />
+                    <div className="thinking-dot" style={styles.dot} />
+                  </div>
+                ) : (
+                  <div style={styles.reportContent}>
+                    {report.split('\n').map((line, i) => (
+                      <span key={i}>
+                        {line.startsWith('#') ? (
+                          <strong style={{ color: '#a855f7', fontFamily: 'Cormorant Garamond', fontSize: 18 }}>
+                            {line.replace(/^#+\s/, '')}
+                          </strong>
+                        ) : line}
+                        {'\n'}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {report && (
+                <div style={styles.modalFooter}>
+                  <button style={styles.copyBtn} onClick={() => { navigator.clipboard.writeText(report); }}>
+                    Copiar relatório
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {active.msgs.length > 0 && (
-          <div style={{ marginTop: 10 }}>
-            <span style={S.label}>HISTÓRICO RECENTE</span>
-            {active.msgs.slice(-6).map((m, i) => (
-              <div key={i} style={S.histItem(m.r === "a")}>
-                <div style={{ fontSize: 9, color: "#6d4f8a", marginBottom: 4, letterSpacing: 1 }}>{m.r === "a" ? "RESPOSTA" : "CONTEXTO"} · {m.ts}</div>
-                <div style={{ fontSize: 12, color: m.r === "a" ? "#ede6ff" : "rgba(237,230,255,0.45)", lineHeight: 1.55 }}>
-                  {m.t.length > 130 ? m.t.slice(0, 130) + "…" : m.t}
-                </div>
+        {/* SETTINGS MODAL */}
+        {showSettings && (
+          <div style={styles.modalOverlay} onClick={() => setShowSettings(false)}>
+            <div style={styles.modal} className="modal-open" onClick={e => e.stopPropagation()}>
+              <div style={styles.modalHeader}>
+                <h2 style={styles.modalTitle}>Configurações</h2>
+                <button style={styles.modalClose} onClick={() => setShowSettings(false)}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
               </div>
-            ))}
+
+              <div style={styles.settingsTabs}>
+                {['profile', 'password', 'biometria'].map(tab => (
+                  <button
+                    key={tab}
+                    style={{ ...styles.settingsTab, ...(settingsTab === tab ? styles.settingsTabActive : {}) }}
+                    onClick={() => { setSettingsTab(tab); setSettingsMsg(''); }}
+                  >
+                    {tab === 'profile' ? 'Perfil' : tab === 'password' ? 'Senha' : 'Biometria'}
+                  </button>
+                ))}
+              </div>
+
+              <div style={styles.modalBody}>
+                {settingsTab === 'profile' && (
+                  <div style={styles.settingsForm}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.formLabel}>Nome</label>
+                      <input
+                        style={styles.formInput}
+                        placeholder={userName}
+                        value={newName}
+                        onChange={e => setNewName(e.target.value)}
+                      />
+                    </div>
+                    <div style={styles.formGroup}>
+                      <label style={styles.formLabel}>E-mail</label>
+                      <input
+                        style={styles.formInput}
+                        placeholder={user.email}
+                        value={newEmail}
+                        onChange={e => setNewEmail(e.target.value)}
+                        type="email"
+                      />
+                    </div>
+                    <button style={styles.saveBtn} onClick={updateProfile}>Salvar alterações</button>
+                  </div>
+                )}
+
+                {settingsTab === 'password' && (
+                  <div style={styles.settingsForm}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.formLabel}>Nova senha</label>
+                      <input
+                        style={styles.formInput}
+                        type="password"
+                        placeholder="••••••••"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                      />
+                    </div>
+                    <div style={styles.formGroup}>
+                      <label style={styles.formLabel}>Confirmar senha</label>
+                      <input
+                        style={styles.formInput}
+                        type="password"
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                      />
+                    </div>
+                    <button style={styles.saveBtn} onClick={updatePassword}>Atualizar senha</button>
+                  </div>
+                )}
+
+                {settingsTab === 'biometria' && (
+                  <div style={styles.settingsForm}>
+                    <div style={styles.biometricInfo}>
+                      <div style={styles.biometricIcon}>
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(168,85,247,0.8)" strokeWidth="1">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                          <path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"/>
+                          <circle cx="12" cy="12" r="2"/>
+                        </svg>
+                      </div>
+                      <p style={styles.biometricText}>
+                        {biometricAvailable
+                          ? 'Face ID ou Touch ID disponível no seu dispositivo.'
+                          : 'Biometria não disponível neste dispositivo.'}
+                      </p>
+                      {biometricAvailable && (
+                        <button style={styles.saveBtn} onClick={handleBiometricSetup}>
+                          Configurar biometria
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {settingsMsg && (
+                  <div style={{
+                    ...styles.settingsMsg,
+                    background: settingsMsgType === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                    color: settingsMsgType === 'success' ? '#4ade80' : '#f87171',
+                    borderColor: settingsMsgType === 'success' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
+                  }}>
+                    {settingsMsg}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
 
-const Logo = () => (
-  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-    <span style={{ fontFamily: "'Cormorant Garamond',Georgia,serif", fontSize: 20, fontWeight: 600, color: "#fff", letterSpacing: 4 }}>BRAVA</span>
-    <span style={{ background: "linear-gradient(135deg,#7c3aed,#a855f7)", borderRadius: 5, padding: "3px 8px", fontSize: 8, letterSpacing: 4, color: "#fff" }}>CLOSER</span>
-  </div>
-);
+const styles = {
+  app: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    background: '#0a0a0f',
+    overflow: 'hidden',
+  },
+  loadingScreen: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100vh',
+    background: '#0a0a0f',
+    gap: 24,
+  },
+  loadingLogo: {
+    fontFamily: 'Cormorant Garamond, serif',
+    fontSize: 64,
+    fontWeight: 300,
+    color: '#a855f7',
+    letterSpacing: -2,
+  },
+  loadingDots: {
+    display: 'flex',
+    gap: 8,
+  },
 
-const globalStyle = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Jost:wght@300;400;500&display=swap');
-  *, *::before, *::after { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #07050f; width: 100%; }
-  #__next { width: 100%; }
-  textarea::placeholder, input::placeholder { color: rgba(109,79,138,0.4); }
-  textarea:focus, input:focus { border-color: rgba(168,85,247,0.5) !important; outline: none; }
-  @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-`;
+  // HEADER
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 16px',
+    height: 56,
+    borderBottom: '1px solid rgba(255,255,255,0.05)',
+    background: 'rgba(10,10,15,0.95)',
+    backdropFilter: 'blur(20px)',
+    flexShrink: 0,
+    zIndex: 10,
+  },
+  headerLeft: { display: 'flex', alignItems: 'center', gap: 12 },
+  headerRight: { display: 'flex', alignItems: 'center', gap: 8 },
+  menuBtn: {
+    background: 'none',
+    border: 'none',
+    color: 'rgba(232,224,213,0.6)',
+    padding: 6,
+    borderRadius: 6,
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'color 0.2s',
+  },
+  logo: { display: 'flex', alignItems: 'baseline', gap: 2 },
+  logoB: {
+    fontFamily: 'Cormorant Garamond, serif',
+    fontSize: 22,
+    fontWeight: 600,
+    color: '#a855f7',
+    lineHeight: 1,
+  },
+  logoText: {
+    fontFamily: 'Cormorant Garamond, serif',
+    fontSize: 20,
+    fontWeight: 300,
+    color: '#e8e0d5',
+    lineHeight: 1,
+  },
+  logoDivider: {
+    color: 'rgba(168,85,247,0.4)',
+    fontSize: 14,
+    margin: '0 4px',
+  },
+  logoCloser: {
+    fontFamily: 'Jost, sans-serif',
+    fontSize: 11,
+    fontWeight: 500,
+    letterSpacing: 3,
+    color: 'rgba(168,85,247,0.8)',
+    textTransform: 'uppercase',
+  },
+  activeClientBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '4px 10px',
+    background: 'rgba(168,85,247,0.08)',
+    border: '1px solid rgba(168,85,247,0.2)',
+    borderRadius: 20,
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    background: '#a855f7',
+    boxShadow: '0 0 6px rgba(168,85,247,0.8)',
+  },
+  activeClientName: {
+    fontSize: 12,
+    fontWeight: 500,
+    color: 'rgba(168,85,247,0.9)',
+    maxWidth: 120,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  iconBtn: {
+    background: 'none',
+    border: 'none',
+    color: 'rgba(232,224,213,0.5)',
+    padding: 7,
+    borderRadius: 6,
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'color 0.2s',
+  },
+
+  // SIDEBAR
+  sidebarOverlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.6)',
+    backdropFilter: 'blur(4px)',
+    zIndex: 100,
+    display: 'flex',
+  },
+  sidebar: {
+    width: 280,
+    maxWidth: '85vw',
+    background: '#0f0f1a',
+    borderRight: '1px solid rgba(255,255,255,0.06)',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
+  sidebarHeader: {
+    padding: '24px 20px 20px',
+    borderBottom: '1px solid rgba(255,255,255,0.05)',
+  },
+  sidebarUserInfo: { display: 'flex', alignItems: 'center', gap: 12 },
+  avatarCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, rgba(168,85,247,0.6), rgba(168,85,247,0.2))',
+    border: '1px solid rgba(168,85,247,0.4)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'Cormorant Garamond, serif',
+    fontSize: 18,
+    fontWeight: 400,
+    color: '#a855f7',
+    flexShrink: 0,
+  },
+  sidebarUserName: {
+    fontSize: 14,
+    fontWeight: 500,
+    color: '#e8e0d5',
+  },
+  sidebarUserEmail: {
+    fontSize: 11,
+    color: 'rgba(232,224,213,0.35)',
+    marginTop: 2,
+  },
+  sidebarSection: {
+    padding: '20px 20px 0',
+  },
+  sidebarSectionTitle: {
+    fontSize: 9,
+    fontWeight: 600,
+    letterSpacing: 2.5,
+    color: 'rgba(168,85,247,0.5)',
+    marginBottom: 10,
+  },
+  newClientRow: { display: 'flex', gap: 8 },
+  sidebarInput: {
+    flex: 1,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 8,
+    padding: '9px 12px',
+    fontSize: 13,
+    color: '#e8e0d5',
+    transition: 'border-color 0.2s',
+  },
+  addBtn: {
+    width: 36,
+    height: 36,
+    background: 'rgba(168,85,247,0.15)',
+    border: '1px solid rgba(168,85,247,0.3)',
+    borderRadius: 8,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#a855f7',
+    flexShrink: 0,
+  },
+  clientList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    maxHeight: '50vh',
+    overflowY: 'auto',
+    paddingBottom: 16,
+  },
+  clientItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '10px 12px',
+    background: 'none',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'background 0.15s',
+    width: '100%',
+  },
+  clientItemActive: {
+    background: 'rgba(168,85,247,0.1)',
+  },
+  clientItemDot: {
+    width: 5,
+    height: 5,
+    borderRadius: '50%',
+    background: 'rgba(168,85,247,0.5)',
+    flexShrink: 0,
+  },
+  clientItemName: {
+    fontSize: 13,
+    color: '#e8e0d5',
+    fontWeight: 400,
+  },
+  clientItemDate: {
+    fontSize: 10,
+    color: 'rgba(232,224,213,0.3)',
+    marginTop: 2,
+  },
+
+  // MAIN
+  main: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  emptyState: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 40,
+  },
+  emptyLogo: { marginBottom: 8 },
+  emptyTitle: {
+    fontFamily: 'Cormorant Garamond, serif',
+    fontSize: 32,
+    fontWeight: 300,
+    color: 'rgba(232,224,213,0.8)',
+    letterSpacing: 1,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: 'rgba(232,224,213,0.35)',
+    letterSpacing: 0.5,
+    marginBottom: 24,
+  },
+  emptyHint: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '10px 16px',
+    background: 'rgba(168,85,247,0.06)',
+    border: '1px solid rgba(168,85,247,0.15)',
+    borderRadius: 20,
+    fontSize: 12,
+    color: 'rgba(168,85,247,0.7)',
+  },
+
+  // CHAT
+  chatArea: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '20px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  chatWelcome: {
+    textAlign: 'center',
+    padding: '40px 20px 20px',
+  },
+  chatWelcomeTitle: {
+    fontFamily: 'Cormorant Garamond, serif',
+    fontSize: 22,
+    fontWeight: 300,
+    color: 'rgba(232,224,213,0.7)',
+    fontStyle: 'italic',
+  },
+  chatWelcomeHint: {
+    fontSize: 12,
+    color: 'rgba(232,224,213,0.3)',
+    marginTop: 6,
+    letterSpacing: 0.3,
+  },
+  msgRow: {
+    display: 'flex',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  agentAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, rgba(168,85,247,0.5), rgba(168,85,247,0.15))',
+    border: '1px solid rgba(168,85,247,0.3)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#a855f7',
+    flexShrink: 0,
+  },
+  userAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: '50%',
+    background: 'rgba(232,224,213,0.08)',
+    border: '1px solid rgba(232,224,213,0.12)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 11,
+    fontWeight: 600,
+    color: 'rgba(232,224,213,0.6)',
+    flexShrink: 0,
+  },
+  bubble: {
+    maxWidth: '75%',
+    padding: '10px 14px',
+    borderRadius: 16,
+    fontSize: 14,
+    lineHeight: 1.6,
+    letterSpacing: 0.2,
+  },
+  bubbleUser: {
+    background: 'rgba(168,85,247,0.15)',
+    border: '1px solid rgba(168,85,247,0.25)',
+    color: '#e8e0d5',
+    borderBottomRightRadius: 4,
+  },
+  bubbleAssistant: {
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.07)',
+    color: 'rgba(232,224,213,0.9)',
+    borderBottomLeftRadius: 4,
+  },
+  thinkingBubble: {
+    display: 'flex',
+    gap: 5,
+    alignItems: 'center',
+    padding: '12px 16px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.07)',
+    borderRadius: 16,
+    borderBottomLeftRadius: 4,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: '50%',
+    background: 'rgba(168,85,247,0.7)',
+    display: 'inline-block',
+  },
+
+  // INPUT
+  inputArea: {
+    padding: '12px 16px 16px',
+    borderTop: '1px solid rgba(255,255,255,0.05)',
+    background: 'rgba(10,10,15,0.8)',
+    flexShrink: 0,
+  },
+  reportBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'none',
+    border: '1px solid rgba(168,85,247,0.2)',
+    borderRadius: 6,
+    padding: '5px 10px',
+    fontSize: 11,
+    color: 'rgba(168,85,247,0.7)',
+    marginBottom: 10,
+    letterSpacing: 0.3,
+    transition: 'all 0.2s',
+  },
+  inputBox: {
+    display: 'flex',
+    alignItems: 'flex-end',
+    gap: 8,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 12,
+    padding: '8px 8px 8px 14px',
+    transition: 'border-color 0.2s',
+  },
+  textarea: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 1.5,
+    color: '#e8e0d5',
+    maxHeight: 120,
+    overflowY: 'auto',
+    padding: '2px 0',
+  },
+  sendBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    background: 'linear-gradient(135deg, rgba(168,85,247,0.8), rgba(168,85,247,0.5))',
+    border: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#fff',
+    flexShrink: 0,
+    transition: 'opacity 0.2s, transform 0.1s',
+  },
+  inputHint: {
+    fontSize: 10,
+    color: 'rgba(232,224,213,0.2)',
+    textAlign: 'center',
+    marginTop: 8,
+    letterSpacing: 0.3,
+  },
+
+  // MODALS
+  modalOverlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.7)',
+    backdropFilter: 'blur(8px)',
+    zIndex: 200,
+    display: 'flex',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    padding: '0 0 0 0',
+  },
+  modal: {
+    width: '100%',
+    maxWidth: 520,
+    maxHeight: '90vh',
+    background: '#0f0f1a',
+    borderRadius: '20px 20px 0 0',
+    border: '1px solid rgba(255,255,255,0.07)',
+    borderBottom: 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '20px 20px 16px',
+    borderBottom: '1px solid rgba(255,255,255,0.05)',
+  },
+  modalTitle: {
+    fontFamily: 'Cormorant Garamond, serif',
+    fontSize: 20,
+    fontWeight: 400,
+    color: '#e8e0d5',
+    letterSpacing: 0.5,
+  },
+  modalClose: {
+    background: 'none',
+    border: 'none',
+    color: 'rgba(232,224,213,0.4)',
+    display: 'flex',
+    alignItems: 'center',
+    padding: 4,
+    borderRadius: 6,
+  },
+  modalBody: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '20px',
+  },
+  modalFooter: {
+    padding: '12px 20px 20px',
+    borderTop: '1px solid rgba(255,255,255,0.05)',
+  },
+  reportContent: {
+    whiteSpace: 'pre-wrap',
+    fontSize: 13,
+    lineHeight: 1.8,
+    color: 'rgba(232,224,213,0.85)',
+    fontFamily: 'Jost, sans-serif',
+  },
+  copyBtn: {
+    width: '100%',
+    padding: '12px',
+    background: 'rgba(168,85,247,0.12)',
+    border: '1px solid rgba(168,85,247,0.25)',
+    borderRadius: 10,
+    color: '#a855f7',
+    fontSize: 13,
+    fontWeight: 500,
+    letterSpacing: 0.5,
+    transition: 'all 0.2s',
+  },
+
+  // SETTINGS
+  settingsTabs: {
+    display: 'flex',
+    padding: '0 20px',
+    gap: 0,
+    borderBottom: '1px solid rgba(255,255,255,0.05)',
+  },
+  settingsTab: {
+    flex: 1,
+    padding: '12px 8px',
+    background: 'none',
+    border: 'none',
+    borderBottom: '2px solid transparent',
+    fontSize: 12,
+    fontWeight: 500,
+    letterSpacing: 0.5,
+    color: 'rgba(232,224,213,0.35)',
+    transition: 'all 0.2s',
+  },
+  settingsTabActive: {
+    color: '#a855f7',
+    borderBottomColor: '#a855f7',
+  },
+  settingsForm: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16,
+  },
+  formGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  formLabel: {
+    fontSize: 11,
+    fontWeight: 500,
+    letterSpacing: 1.5,
+    color: 'rgba(232,224,213,0.35)',
+    textTransform: 'uppercase',
+  },
+  formInput: {
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 8,
+    padding: '11px 14px',
+    fontSize: 14,
+    color: '#e8e0d5',
+    width: '100%',
+    transition: 'border-color 0.2s',
+  },
+  saveBtn: {
+    padding: '12px',
+    background: 'linear-gradient(135deg, rgba(168,85,247,0.7), rgba(168,85,247,0.4))',
+    border: '1px solid rgba(168,85,247,0.4)',
+    borderRadius: 10,
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: 500,
+    letterSpacing: 0.5,
+    marginTop: 4,
+    transition: 'all 0.2s',
+  },
+  settingsMsg: {
+    marginTop: 12,
+    padding: '10px 14px',
+    borderRadius: 8,
+    border: '1px solid',
+    fontSize: 13,
+  },
+  biometricInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 16,
+    padding: '16px 0',
+    textAlign: 'center',
+  },
+  biometricIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: '50%',
+    background: 'rgba(168,85,247,0.08)',
+    border: '1px solid rgba(168,85,247,0.2)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  biometricText: {
+    fontSize: 13,
+    color: 'rgba(232,224,213,0.5)',
+    lineHeight: 1.6,
+    maxWidth: 260,
+  },
+};
