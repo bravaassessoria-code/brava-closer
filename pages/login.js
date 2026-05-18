@@ -163,7 +163,7 @@ export default function Login() {
             <div style={{ textAlign: "center", marginBottom: 36 }}>
               <div className="logo-glow" style={{ display: "inline-block", marginBottom: 16 }}>
                 <img
-                  src={CHAMELEON_IMG}
+                  src="/logo.png?v=2"
                   alt="Brava Camaleão"
                   style={{ width: 88, height: 88, objectFit: "contain" }}
                 />
