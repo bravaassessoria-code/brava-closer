@@ -274,8 +274,8 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
   function autoResize(e) { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }
 
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'#080810' }}>
-      <img src="/logo.png?v=2" style={{ width:50, height:50, objectFit:'contain' }} alt="Brava" />
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'#080810', margin:0, padding:0, overflow:'hidden' }}>
+      <img src="/logo.png?v=2" style={{ width:80, height:80, objectFit:'contain', filter:'drop-shadow(0 0 20px rgba(168,85,247,.8))' }} alt="Brava" />
     </div>
   );
 
@@ -306,7 +306,7 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
         <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
       </Head>
       <style>{`
-        *{box-sizing:border-box;margin:0;padding:0}
+        *{box-sizing:border-box;margin:0;padding:0}html,body{overflow:hidden;width:100%;height:100%}*{box-sizing:border-box;margin:0;padding:0}
         body{background:${c.bg};font-family:'Jost',sans-serif;color:${c.text};overflow:hidden;height:100vh;transition:background .3s}
         ::placeholder{color:${c.textMuted};opacity:1}
         ::-webkit-scrollbar{width:3px}
