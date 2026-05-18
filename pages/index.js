@@ -453,8 +453,8 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
         {/* ══ MAIN ══ */}
         <main style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
           {!activeClient ? (
-            <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 24px' }}>
-              <img src="/logo.png?v=2" className="logo-anim" style={{ width:110, height:110, objectFit:'contain', marginBottom:32 }} alt="Brava" />
+            <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 24px', overflow:'hidden' }}>
+              <img src="/logo.png?v=2" className="logo-anim" style={{ width:110, height:110, objectFit:'contain', marginBottom:32, display:'block', maxWidth:'100%' }} alt="Brava" />
               <h1 style={{ fontFamily:'Cormorant Garamond,serif', fontSize:34, fontWeight:300, color:c.text, letterSpacing:.5, marginBottom:8, textAlign:'center', lineHeight:1.2 }}>Closer Inteligente</h1>
               <p style={{ fontSize:13, color:c.textMuted, letterSpacing:.4, marginBottom:48, textAlign:'center', maxWidth:260, lineHeight:1.65 }}>Feche mais negócios com o poder da inteligência artificial</p>
               <button className="btn-float" onClick={() => setShowSidebar(true)} style={{ padding:'16px 44px', background:'linear-gradient(135deg,rgba(168,85,247,.9),rgba(110,30,190,.95) 50%,rgba(168,85,247,.85))', border:'none', borderRadius:50, color:'#fff', fontSize:13, fontWeight:500, letterSpacing:2, textTransform:'uppercase', display:'flex', alignItems:'center', gap:10, position:'relative', overflow:'hidden' }}>
