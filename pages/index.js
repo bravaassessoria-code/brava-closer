@@ -309,8 +309,8 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
         *{box-sizing:border-box;margin:0;padding:0}html,body{overflow:hidden;width:100%;height:100%}*{box-sizing:border-box;margin:0;padding:0}
         body{background:${c.bg};font-family:'Jost',sans-serif;color:${c.text};overflow:hidden;height:100vh;transition:background .3s}
         ::placeholder{color:${c.textMuted};opacity:1}
-        ::-webkit-scrollbar{width:3px}
-        ::-webkit-scrollbar-thumb{background:rgba(168,85,247,.2);border-radius:2px}
+        ::-webkit-scrollbar{display:none}
+*{scrollbar-width:none;-ms-overflow-style:none}
         textarea,input{outline:none;border:none;background:transparent;font-family:'Jost',sans-serif}
         button{cursor:pointer;font-family:'Jost',sans-serif;border:none}
         textarea{resize:none}
