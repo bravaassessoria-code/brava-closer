@@ -39,7 +39,11 @@ export default async function handler(req, res) {
       whatsapp: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro da mensagem como se você estivesse digitando no WhatsApp agora. Mensagens curtas, naturais, que criam curiosidade e conduzem ao próximo passo.`,
       scripts: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro como se fosse digitar agora. Tom direto e consultivo.`,
       fechamento: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro da mensagem. Foco total em conduzir ao sim agora. Use perguntas de fechamento, crie senso de urgência real, ofereça as formas de pagamento de forma natural. Exemplo do estilo esperado: Perfeito! Então vamos fazer assim: o investimento é X. Você prefere no Pix à vista com desconto ou prefere parcelar no cartão? Te mando o link agora mesmo.`,
-      marketing: `Você é um closer especialista em fotografia, vídeo e marketing digital da Brava Assessoria. Gere APENAS 1 mensagem curta para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos, sem numeração. Apenas texto puro natural como se fosse digitar agora.
+      marketing: `REGRA ABSOLUTA: Gere SOMENTE 1 (UMA) mensagem. Apenas uma. Se você gerar mais de uma mensagem você falhou. Uma única mensagem curta, máximo 3 linhas, sem separador, sem opção alternativa.
+
+OUTRA REGRA ABSOLUTA: Você está no início da conversa. Não mencione preço, não mencione pacote, não mencione desconto até o cliente ter respondido pelo menos 3 perguntas suas sobre o evento. Se mencionar preço antes disso você falhou.
+
+Você é um closer especialista em fotografia, vídeo e marketing digital da Brava Assessoria. Gere APENAS 1 mensagem curta para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos, sem numeração. Apenas texto puro natural como se fosse digitar agora.
 
 FLUXO OBRIGATÓRIO DA CONVERSA - siga essa ordem:
 1. Primeiro: entender a data e o tipo de evento
