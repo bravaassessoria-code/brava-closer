@@ -1,22 +1,18 @@
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-
   const { messages, clientName } = req.body;
   const nomeCliente = clientName || "Cliente";
-
   const ultimaMensagem = messages[messages.length - 1];
   const textoUsuario = typeof ultimaMensagem.content === "string"
     ? ultimaMensagem.content
     : Array.isArray(ultimaMensagem.content)
       ? ultimaMensagem.content.find(b => b.type === "text")?.text || ""
       : "";
-
   const headers = {
     "content-type": "application/json",
     "anthropic-version": "2023-06-01",
     "x-api-key": process.env.ANTHROPIC_API_KEY,
   };
-
   try {
     const supervisorRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST", headers,
@@ -28,57 +24,54 @@ export default async function handler(req, res) {
       }),
     });
     const supervisorData = await supervisorRes.json();
-    let agente = "fechamento";
+    let agente = "marketing";
     try {
       const texto = supervisorData.content?.[0]?.text || "{}";
-      agente = JSON.parse(texto).agente || "fechamento";
+      agente = JSON.parse(texto).agente || "marketing";
     } catch {}
 
     const sistemas = {
-      objecoes: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro da mensagem como se você estivesse digitando no WhatsApp agora. Tom: seguro, direto, empático mas firme. Nunca soar desesperado. Cada mensagem deve conduzir o cliente a uma ação concreta.`,
-      whatsapp: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro da mensagem como se você estivesse digitando no WhatsApp agora. Mensagens curtas, naturais, que criam curiosidade e conduzem ao próximo passo.`,
-      scripts: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro como se fosse digitar agora. Tom direto e consultivo.`,
-      fechamento: `Você é um closer de vendas de alto nível. Gere 2 mensagens prontas para copiar e enviar no WhatsApp, separadas por linha em branco. Sem títulos, sem markdown, sem asteriscos, sem numeração, sem explicações. Apenas o texto puro da mensagem. Foco total em conduzir ao sim agora. Use perguntas de fechamento, crie senso de urgência real, ofereça as formas de pagamento de forma natural. Exemplo do estilo esperado: Perfeito! Então vamos fazer assim: o investimento é X. Você prefere no Pix à vista com desconto ou prefere parcelar no cartão? Te mando o link agora mesmo.`,
-      marketing: `REGRA ABSOLUTA: Gere SOMENTE 1 (UMA) mensagem. Apenas uma. Se você gerar mais de uma mensagem você falhou. Uma única mensagem curta, máximo 3 linhas, sem separador, sem opção alternativa.
+      objecoes: `Você é um closer de vendas da Brava Assessoria. Gere APENAS 1 mensagem curta pronta para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos. Apenas texto puro natural. Tom seguro, direto, empático. Conduza o cliente ao próximo passo.`,
+      whatsapp: `Você é um closer de vendas da Brava Assessoria. Gere APENAS 1 mensagem curta pronta para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos. Apenas texto puro natural. Mensagem curta e direta.`,
+      scripts: `Você é um closer de vendas da Brava Assessoria. Gere APENAS 1 mensagem curta pronta para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos. Apenas texto puro natural. Tom direto e consultivo.`,
+      fechamento: `Você é um closer de vendas da Brava Assessoria. Gere APENAS 1 mensagem curta pronta para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos. Apenas texto puro natural. Foco em conduzir ao sim agora.`,
+      marketing: `Você é um closer especialista em fotografia, vídeo e marketing digital da Brava Assessoria. Gere APENAS 1 mensagem curta para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos. Apenas texto puro natural como se fosse digitar agora. Tom próximo e confiante.
 
-OUTRA REGRA ABSOLUTA: Você está no início da conversa. Não mencione preço, não mencione pacote, não mencione desconto até o cliente ter respondido pelo menos 3 perguntas suas sobre o evento. Se mencionar preço antes disso você falhou.
-
-Você é um closer especialista em fotografia, vídeo e marketing digital da Brava Assessoria. Gere APENAS 1 mensagem curta para copiar e enviar no WhatsApp. Sem títulos, sem markdown, sem asteriscos, sem numeração. Apenas texto puro natural como se fosse digitar agora.
-
-FLUXO OBRIGATÓRIO DA CONVERSA - siga essa ordem:
-1. Primeiro: entender a data e o tipo de evento
-2. Segundo: entender o estilo que o cliente quer (clássico, rústico, moderno, espontâneo)
-3. Terceiro: entender o que é mais importante para o cliente no registro
-4. Quarto: entender quantos convidados e se tem locais definidos
-5. Quinto: só depois de entender tudo isso, apresentar o investimento com naturalidade
+FLUXO OBRIGATÓRIO: Siga essa ordem antes de falar de preço:
+1. Entender data e tipo de evento
+2. Entender estilo desejado
+3. Entender o que é mais importante para o cliente
+4. Entender estrutura do evento
+5. Só então apresentar investimento
 
 REGRAS:
 - Faça apenas UMA pergunta por mensagem
-- Nunca mencione preço antes de passar pelo menos 3 perguntas de diagnóstico
-- Tom próximo, leve, como uma conversa natural no WhatsApp
-- Nunca soar vendedor ou apressado
-- Cada mensagem deve ter no máximo 3 linhas
+- Nunca mencione preço antes de 3 perguntas de diagnóstico
+- Tom leve e natural, máximo 3 linhas
+- Nunca soar apressado ou vendedor
 
-TABELA DE PREÇOS (usar apenas quando cliente já passou pelo diagnóstico completo):
-- Fotografia completa: R$ 5.000
-- Vídeo completo: R$ 7.000
+PREÇOS (apenas quando cliente estiver pronto):
+- Fotografia: R$ 5.000
+- Vídeo: R$ 7.000
 - Foto + Vídeo: R$ 12.000
-- Álbum 30x30 com 80 fotos: R$ 3.200 (pode decidir após o evento)`,
+- Álbum 30x30 80 fotos: R$ 3.200`,
     };
 
     const agenteRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST", headers,
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
-        max_tokens: 1024,
-        system: `${sistemas[agente] || sistemas.fechamento}\n\nResponda sempre em português brasileiro.`,
+        max_tokens: 300,
+        system: `${sistemas[agente] || sistemas.marketing}\n\nResponda sempre em português brasileiro. GERE APENAS 1 MENSAGEM CURTA.`,
         messages: messages.map(m => ({ role: m.role, content: m.content }))
       }),
     });
     const agenteData = await agenteRes.json();
+    const textoCompleto = agenteData.content?.[0]?.text || "Erro ao gerar resposta.";
+    const primeiraMsg = textoCompleto.split('\n\n')[0].trim();
 
     res.status(200).json({
-      ...agenteData,
+      content: [{ type: "text", text: primeiraMsg }],
       _agente_acionado: agente
     });
   } catch (err) {
