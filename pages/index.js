@@ -259,7 +259,7 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'#080810' }}>
-      <img src="/logo.png" style={{ width:80, height:80, objectFit:'contain' }} alt="Brava" />
+      <img src="/logo.png?v=2" style={{ width:50, height:50, objectFit:'contain' }} alt="Brava" />
     </div>
   );
 
@@ -358,7 +358,7 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
             <div style={{ display:'flex', alignItems:'center', gap:9 }}>
               {/* Logo SEM container — PNG transparente direto */}
               <img
-                src="/logo.png"
+                src="/logo.png?v=2"
                 style={{ width:30, height:30, objectFit:'contain', filter:'drop-shadow(0 0 6px rgba(168,85,247,.5))' }}
                 alt="Brava"
               />
@@ -460,9 +460,9 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
 
               {/* Logo flutuante — PNG transparente com filter drop-shadow */}
               <img
-                src="/logo.png"
+                src="/logo.png?v=2"
                 className="logo-anim"
-                style={{ width:130, height:130, objectFit:'contain', marginBottom:32 }}
+                style={{ width:110, height:110, objectFit:'contain', marginBottom:32 }}
                 alt="Brava"
               />
 
