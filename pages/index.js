@@ -51,7 +51,6 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Carrega clientes do Supabase quando usuário loga
   useEffect(() => {
     if (user) loadClients();
   }, [user]);
@@ -274,8 +273,8 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
   function autoResize(e) { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }
 
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'#080810', margin:0, padding:0, overflow:'hidden' }}>
-      <img src="/logo.png?v=2" style={{ width:80, height:80, objectFit:'contain', filter:'drop-shadow(0 0 20px rgba(168,85,247,.8))' }} alt="Brava" />
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'#0a0500', margin:0, padding:0, overflow:'hidden' }}>
+      <img src="/logo.png?v=2" style={{ width:80, height:80, objectFit:'contain', filter:'drop-shadow(0 0 20px rgba(249,115,22,.8))' }} alt="Brava" />
     </div>
   );
 
@@ -284,18 +283,18 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Closer';
 
   const c = {
-    bg: isDark ? '#080810' : '#f5f2ee',
-    surface: isDark ? '#0f0f1a' : '#ffffff',
+    bg: isDark ? '#0a0500' : '#f5f2ee',
+    surface: isDark ? '#120800' : '#ffffff',
     border: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)',
     text: isDark ? '#e8e0d5' : '#1a1410',
     textMuted: isDark ? 'rgba(232,224,213,0.45)' : 'rgba(26,20,16,0.45)',
     textFaint: isDark ? 'rgba(232,224,213,0.2)' : 'rgba(26,20,16,0.2)',
-    purple: '#a855f7',
-    purpleFade: isDark ? 'rgba(168,85,247,0.1)' : 'rgba(168,85,247,0.07)',
-    purpleBorder: 'rgba(168,85,247,0.3)',
+    purple: '#f97316',
+    purpleFade: isDark ? 'rgba(249,115,22,0.1)' : 'rgba(249,115,22,0.07)',
+    purpleBorder: 'rgba(249,115,22,0.3)',
     inputBg: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
     inputBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)',
-    headerBg: isDark ? 'rgba(8,8,16,0.96)' : 'rgba(245,242,238,0.96)',
+    headerBg: isDark ? 'rgba(10,5,0,0.96)' : 'rgba(245,242,238,0.96)',
   };
 
   return (
@@ -306,11 +305,11 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
         <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
       </Head>
       <style>{`
-        *{box-sizing:border-box;margin:0;padding:0}html,body{overflow:hidden;width:100%;height:100%}*{box-sizing:border-box;margin:0;padding:0}
+        *{box-sizing:border-box;margin:0;padding:0}html,body{overflow:hidden;width:100%;height:100%}
         body{background:${c.bg};font-family:'Jost',sans-serif;color:${c.text};overflow:hidden;height:100vh;transition:background .3s}
         ::placeholder{color:${c.textMuted};opacity:1}
         ::-webkit-scrollbar{display:none}
-*{scrollbar-width:none;-ms-overflow-style:none}
+        *{scrollbar-width:none;-ms-overflow-style:none}
         textarea,input{outline:none;border:none;background:transparent;font-family:'Jost',sans-serif}
         button{cursor:pointer;font-family:'Jost',sans-serif;border:none}
         textarea{resize:none}
@@ -319,22 +318,22 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
         @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
         @keyframes logoFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-14px) scale(1.04)}}
         @keyframes logoGlow{
-          0%,100%{filter:drop-shadow(0 0 18px rgba(168,85,247,.7)) drop-shadow(0 0 40px rgba(168,85,247,.35)) drop-shadow(0 8px 24px rgba(168,85,247,.3))}
-          50%{filter:drop-shadow(0 0 30px rgba(168,85,247,.95)) drop-shadow(0 0 65px rgba(168,85,247,.55)) drop-shadow(0 12px 32px rgba(168,85,247,.45))}
+          0%,100%{filter:drop-shadow(0 0 18px rgba(249,115,22,.7)) drop-shadow(0 0 40px rgba(249,115,22,.35)) drop-shadow(0 8px 24px rgba(249,115,22,.3))}
+          50%{filter:drop-shadow(0 0 30px rgba(249,115,22,.95)) drop-shadow(0 0 65px rgba(249,115,22,.55)) drop-shadow(0 12px 32px rgba(249,115,22,.45))}
         }
         @keyframes btnFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
         @keyframes btnGlow{
-          0%,100%{box-shadow:0 0 20px rgba(168,85,247,.4),0 8px 32px rgba(168,85,247,.25)}
-          50%{box-shadow:0 0 35px rgba(168,85,247,.65),0 10px 44px rgba(168,85,247,.4)}
+          0%,100%{box-shadow:0 0 20px rgba(249,115,22,.4),0 8px 32px rgba(249,115,22,.25)}
+          50%{box-shadow:0 0 35px rgba(249,115,22,.65),0 10px 44px rgba(249,115,22,.4)}
         }
         @keyframes copyGlow{
-          0%,100%{box-shadow:0 0 18px rgba(168,85,247,.35),0 6px 28px rgba(168,85,247,.2),inset 0 1px 0 rgba(255,255,255,.2)}
-          50%{box-shadow:0 0 30px rgba(168,85,247,.6),0 8px 36px rgba(168,85,247,.35),inset 0 1px 0 rgba(255,255,255,.25)}
+          0%,100%{box-shadow:0 0 18px rgba(249,115,22,.35),0 6px 28px rgba(249,115,22,.2),inset 0 1px 0 rgba(255,255,255,.2)}
+          50%{box-shadow:0 0 30px rgba(249,115,22,.6),0 8px 36px rgba(249,115,22,.35),inset 0 1px 0 rgba(255,255,255,.25)}
         }
         @keyframes bounce{0%,80%,100%{transform:scale(.35);opacity:.35}40%{transform:scale(1);opacity:1}}
         @keyframes neonPulse{
-          0%,100%{text-shadow:0 0 6px rgba(168,85,247,.8),0 0 14px rgba(168,85,247,.5),0 0 28px rgba(168,85,247,.3)}
-          50%{text-shadow:0 0 10px rgba(168,85,247,1),0 0 22px rgba(168,85,247,.7),0 0 45px rgba(168,85,247,.45)}
+          0%,100%{text-shadow:0 0 6px rgba(249,115,22,.8),0 0 14px rgba(249,115,22,.5),0 0 28px rgba(249,115,22,.3)}
+          50%{text-shadow:0 0 10px rgba(249,115,22,1),0 0 22px rgba(249,115,22,.7),0 0 45px rgba(249,115,22,.45)}
         }
         .logo-anim{animation:logoFloat 4s ease-in-out infinite,logoGlow 4s ease-in-out infinite}
         .btn-float{animation:btnFloat 3s ease-in-out infinite,btnGlow 3s ease-in-out infinite}
@@ -347,8 +346,8 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
         .d1{animation:bounce 1.4s -.32s infinite ease-in-out}
         .d2{animation:bounce 1.4s -.16s infinite ease-in-out}
         .d3{animation:bounce 1.4s 0s infinite ease-in-out}
-        .ci:hover{background:rgba(168,85,247,0.1) !important}
-        .ib:hover{opacity:1 !important;color:#a855f7 !important}
+        .ci:hover{background:rgba(249,115,22,0.1) !important}
+        .ib:hover{opacity:1 !important;color:#f97316 !important}
       `}</style>
 
       <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:c.bg, overflow:'hidden' }}>
@@ -360,7 +359,7 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
             <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-              <img src="/logo.png?v=2" style={{ width:30, height:30, objectFit:'contain', filter:'drop-shadow(0 0 6px rgba(168,85,247,.5))' }} alt="Brava" />
+              <img src="/logo.png?v=2" style={{ width:30, height:30, objectFit:'contain', filter:'drop-shadow(0 0 6px rgba(249,115,22,.5))' }} alt="Brava" />
               <div style={{ display:'flex', alignItems:'baseline', gap:1 }}>
                 <span style={{ fontFamily:'Cormorant Garamond,serif', fontSize:20, fontWeight:400, color:c.text, lineHeight:1 }}>Brava</span>
                 <span style={{ fontFamily:'Jost,sans-serif', fontSize:9, fontWeight:600, letterSpacing:3, color:c.purple, textTransform:'uppercase', marginLeft:5 }}>CLOSER</span>
@@ -392,9 +391,9 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
         {showSidebar && (
           <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.6)', backdropFilter:'blur(8px)', zIndex:100, display:'flex' }} onClick={() => setShowSidebar(false)}>
             <div className="sb" style={{ width:300, maxWidth:'88vw', background:c.surface, borderRight:`1px solid ${c.border}`, height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }} onClick={e => e.stopPropagation()}>
-              <div style={{ padding:'28px 22px 20px', borderBottom:`1px solid ${c.border}`, background: isDark ? 'rgba(168,85,247,0.04)' : 'rgba(168,85,247,0.03)' }}>
+              <div style={{ padding:'28px 22px 20px', borderBottom:`1px solid ${c.border}`, background: isDark ? 'rgba(249,115,22,0.04)' : 'rgba(249,115,22,0.03)' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                  <div style={{ width:44, height:44, borderRadius:'50%', background:'linear-gradient(135deg,rgba(168,85,247,.6),rgba(168,85,247,.2))', border:`1.5px solid ${c.purpleBorder}`, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cormorant Garamond,serif', fontSize:20, color:c.purple, boxShadow:'0 0 14px rgba(168,85,247,.3)' }}>
+                  <div style={{ width:44, height:44, borderRadius:'50%', background:'linear-gradient(135deg,rgba(249,115,22,.6),rgba(249,115,22,.2))', border:`1.5px solid ${c.purpleBorder}`, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cormorant Garamond,serif', fontSize:20, color:c.purple, boxShadow:'0 0 14px rgba(249,115,22,.3)' }}>
                     {userName[0].toUpperCase()}
                   </div>
                   <div>
@@ -408,12 +407,12 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
                 {showNewClientInput ? (
                   <div style={{ display:'flex', gap:8 }}>
                     <input autoFocus autoComplete="off" style={{ flex:1, background:c.inputBg, border:`1px solid ${c.inputBorder}`, borderRadius:10, padding:'10px 13px', fontSize:13, color:c.text }} placeholder="Nome do cliente..." value={clientName} onChange={e => setClientName(e.target.value)} onKeyDown={e => e.key === 'Enter' && startNewClient()} />
-                    <button onClick={startNewClient} style={{ width:38, height:38, background:`linear-gradient(135deg,rgba(168,85,247,.8),rgba(110,30,190,.9))`, border:'none', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', flexShrink:0, boxShadow:'0 4px 14px rgba(168,85,247,.35)' }}>
+                    <button onClick={startNewClient} style={{ width:38, height:38, background:`linear-gradient(135deg,rgba(249,115,22,.8),rgba(194,65,12,.9))`, border:'none', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', flexShrink:0, boxShadow:'0 4px 14px rgba(249,115,22,.35)' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                     </button>
                   </div>
                 ) : (
-                  <button onClick={() => setShowNewClientInput(true)} style={{ width:'100%', padding:'12px 14px', background:`linear-gradient(135deg,rgba(168,85,247,.12),rgba(168,85,247,.05))`, border:`1px dashed ${c.purpleBorder}`, borderRadius:10, color:c.purple, fontSize:13, fontWeight:500, display:'flex', alignItems:'center', gap:8, boxShadow:'0 2px 10px rgba(168,85,247,.1)' }}>
+                  <button onClick={() => setShowNewClientInput(true)} style={{ width:'100%', padding:'12px 14px', background:`linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.05))`, border:`1px dashed ${c.purpleBorder}`, borderRadius:10, color:c.purple, fontSize:13, fontWeight:500, display:'flex', alignItems:'center', gap:8, boxShadow:'0 2px 10px rgba(249,115,22,.1)' }}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     Iniciar novo cliente
                   </button>
@@ -428,7 +427,7 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
                         const msgCount = Array.isArray(client.messages) ? client.messages.length : 0;
                         const isAct = activeClient?.id === client.id;
                         return (
-                          <button key={client.id} className="ci" onClick={() => openClient(client)} style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 13px', background: isAct ? `linear-gradient(135deg,rgba(168,85,247,.15),rgba(168,85,247,.05))` : 'none', border:`1px solid ${isAct ? c.purpleBorder : 'transparent'}`, borderRadius:10, textAlign:'left', width:'100%', transition:'all .15s' }}>
+                          <button key={client.id} className="ci" onClick={() => openClient(client)} style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 13px', background: isAct ? `linear-gradient(135deg,rgba(249,115,22,.15),rgba(249,115,22,.05))` : 'none', border:`1px solid ${isAct ? c.purpleBorder : 'transparent'}`, borderRadius:10, textAlign:'left', width:'100%', transition:'all .15s' }}>
                             <div style={{ width:7, height:7, borderRadius:'50%', background: isAct ? c.purple : c.textFaint, flexShrink:0, boxShadow: isAct ? `0 0 8px ${c.purple}` : 'none' }} />
                             <div style={{ flex:1, minWidth:0 }}>
                               <div style={{ fontSize:13, color: isAct ? c.text : c.textMuted, fontWeight: isAct ? 600 : 400, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{client.name}</div>
@@ -457,7 +456,7 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
               <img src="/logo.png?v=2" className="logo-anim" style={{ width:110, height:110, objectFit:'contain', marginBottom:32, display:'block', maxWidth:'100%' }} alt="Brava" />
               <h1 style={{ fontFamily:'Cormorant Garamond,serif', fontSize:34, fontWeight:300, color:c.text, letterSpacing:.5, marginBottom:8, textAlign:'center', lineHeight:1.2 }}>Closer Inteligente</h1>
               <p style={{ fontSize:13, color:c.textMuted, letterSpacing:.4, marginBottom:48, textAlign:'center', maxWidth:260, lineHeight:1.65 }}>Feche mais negócios com o poder da inteligência artificial</p>
-              <button className="btn-float" onClick={() => setShowSidebar(true)} style={{ padding:'16px 44px', background:'linear-gradient(135deg,rgba(168,85,247,.9),rgba(110,30,190,.95) 50%,rgba(168,85,247,.85))', border:'none', borderRadius:50, color:'#fff', fontSize:13, fontWeight:500, letterSpacing:2, textTransform:'uppercase', display:'flex', alignItems:'center', gap:10, position:'relative', overflow:'hidden' }}>
+              <button className="btn-float" onClick={() => setShowSidebar(true)} style={{ padding:'16px 44px', background:'linear-gradient(135deg,rgba(249,115,22,.9),rgba(194,65,12,.95) 50%,rgba(249,115,22,.85))', border:'none', borderRadius:50, color:'#fff', fontSize:13, fontWeight:500, letterSpacing:2, textTransform:'uppercase', display:'flex', alignItems:'center', gap:10, position:'relative', overflow:'hidden' }}>
                 <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg,rgba(255,255,255,.2),transparent 55%)', borderRadius:50, pointerEvents:'none' }} />
                 <div style={{ position:'absolute', inset:0, borderRadius:50, border:'1px solid rgba(255,255,255,.3)', pointerEvents:'none' }} />
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position:'relative' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
@@ -472,7 +471,7 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
           ) : (
             <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
               <div style={{ padding:'0 20px', height:52, borderBottom:`1px solid ${c.border}`, background:c.headerBg, display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
-                <button onClick={() => setShowSidebar(true)} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', background:`linear-gradient(135deg,rgba(168,85,247,.12),rgba(168,85,247,.05))`, border:`1px solid ${c.purpleBorder}`, borderRadius:20, color:c.purple, fontSize:12, fontWeight:600, letterSpacing:.5, boxShadow:'0 2px 10px rgba(168,85,247,.15)' }}>
+                <button onClick={() => setShowSidebar(true)} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', background:`linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.05))`, border:`1px solid ${c.purpleBorder}`, borderRadius:20, color:c.purple, fontSize:12, fontWeight:600, letterSpacing:.5, boxShadow:'0 2px 10px rgba(249,115,22,.15)' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
                   Clientes
                 </button>
@@ -480,7 +479,7 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
                   <div style={{ fontSize:14, fontWeight:600, color:c.text }}>{activeClient.name}</div>
                   <div style={{ fontSize:10, color:c.textFaint }}>{conversation.length} interações</div>
                 </div>
-                <button onClick={generateReport} style={{ display:'flex', alignItems:'center', gap:5, padding:'8px 14px', background:'linear-gradient(135deg,rgba(168,85,247,.7),rgba(110,30,190,.8))', border:'none', borderRadius:20, color:'#fff', fontSize:12, fontWeight:500, letterSpacing:.3, boxShadow:'0 2px 10px rgba(168,85,247,.3)' }}>
+                <button onClick={generateReport} style={{ display:'flex', alignItems:'center', gap:5, padding:'8px 14px', background:'linear-gradient(135deg,rgba(249,115,22,.7),rgba(194,65,12,.8))', border:'none', borderRadius:20, color:'#fff', fontSize:12, fontWeight:500, letterSpacing:.3, boxShadow:'0 2px 10px rgba(249,115,22,.3)' }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                   Relatório
                 </button>
@@ -502,7 +501,7 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
                 </div>
 
                 <button onClick={sendMessage} disabled={(!message.trim() && !uploadedImageBase64) || isThinking}
-                  style={{ padding:'16px', background: (!message.trim() && !uploadedImageBase64) ? c.inputBg : 'linear-gradient(135deg,rgba(168,85,247,.88),rgba(110,30,190,.95))', border:`1px solid ${(!message.trim() && !uploadedImageBase64) ? c.border : 'rgba(168,85,247,.4)'}`, borderRadius:16, color: (!message.trim() && !uploadedImageBase64) ? c.textMuted : '#fff', fontSize:14, fontWeight:500, letterSpacing:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, transition:'all .2s', position:'relative', overflow:'hidden', boxShadow: (!message.trim() && !uploadedImageBase64) ? 'none' : '0 4px 20px rgba(168,85,247,.4)' }}>
+                  style={{ padding:'16px', background: (!message.trim() && !uploadedImageBase64) ? c.inputBg : 'linear-gradient(135deg,rgba(249,115,22,.88),rgba(194,65,12,.95))', border:`1px solid ${(!message.trim() && !uploadedImageBase64) ? c.border : 'rgba(249,115,22,.4)'}`, borderRadius:16, color: (!message.trim() && !uploadedImageBase64) ? c.textMuted : '#fff', fontSize:14, fontWeight:500, letterSpacing:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, transition:'all .2s', position:'relative', overflow:'hidden', boxShadow: (!message.trim() && !uploadedImageBase64) ? 'none' : '0 4px 20px rgba(249,115,22,.4)' }}>
                   {(!message.trim() && !uploadedImageBase64) ? null : <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg,rgba(255,255,255,.12),transparent 55%)', pointerEvents:'none' }} />}
                   {isThinking
                     ? <><div className="d1" style={{ width:7, height:7, borderRadius:'50%', background:'rgba(255,255,255,.7)', display:'inline-block' }} /><div className="d2" style={{ width:7, height:7, borderRadius:'50%', background:'rgba(255,255,255,.7)', display:'inline-block', margin:'0 4px' }} /><div className="d3" style={{ width:7, height:7, borderRadius:'50%', background:'rgba(255,255,255,.7)', display:'inline-block' }} /></>
@@ -515,14 +514,14 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={c.purple} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                       <span style={{ fontSize:9, fontWeight:700, letterSpacing:2.5, color:c.purple }}>RESPOSTA PRONTA</span>
                     </div>
-                    <div style={{ background:c.surface, border:`1px solid ${c.purpleBorder}`, borderRadius:18, padding:'18px 18px 16px', boxShadow: isDark ? '0 4px 24px rgba(168,85,247,.15)' : '0 4px 16px rgba(168,85,247,.1)', position:'relative', overflow:'hidden' }}>
-                      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:'linear-gradient(90deg,rgba(168,85,247,.8),rgba(110,30,190,.6),rgba(168,85,247,.4))', borderRadius:'18px 18px 0 0' }} />
+                    <div style={{ background:c.surface, border:`1px solid ${c.purpleBorder}`, borderRadius:18, padding:'18px 18px 16px', boxShadow: isDark ? '0 4px 24px rgba(249,115,22,.15)' : '0 4px 16px rgba(249,115,22,.1)', position:'relative', overflow:'hidden' }}>
+                      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:'linear-gradient(90deg,rgba(249,115,22,.8),rgba(194,65,12,.6),rgba(249,115,22,.4))', borderRadius:'18px 18px 0 0' }} />
                       <div style={{ fontSize:14, lineHeight:1.75, color:c.text, whiteSpace:'pre-wrap' }}>
                         {lastResponse.split('\n').map((line, i, a) => <span key={i}>{line}{i < a.length-1 && <br/>}</span>)}
                       </div>
                     </div>
                     <div style={{ display:'flex', gap:10 }}>
-                      <button className="btn-copy" onClick={copyResponse} style={{ flex:1, padding:'14px 16px', background: copied ? 'linear-gradient(135deg,rgba(34,197,94,.8),rgba(22,163,74,.9))' : 'linear-gradient(135deg,rgba(168,85,247,.85),rgba(110,30,190,.95))', border:'none', borderRadius:14, color:'#fff', fontSize:13, fontWeight:600, letterSpacing:.8, display:'flex', alignItems:'center', justifyContent:'center', gap:8, position:'relative', overflow:'hidden', transition:'background .3s' }}>
+                      <button className="btn-copy" onClick={copyResponse} style={{ flex:1, padding:'14px 16px', background: copied ? 'linear-gradient(135deg,rgba(34,197,94,.8),rgba(22,163,74,.9))' : 'linear-gradient(135deg,rgba(249,115,22,.85),rgba(194,65,12,.95))', border:'none', borderRadius:14, color:'#fff', fontSize:13, fontWeight:600, letterSpacing:.8, display:'flex', alignItems:'center', justifyContent:'center', gap:8, position:'relative', overflow:'hidden', transition:'background .3s' }}>
                         <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg,rgba(255,255,255,.18),transparent 55%)', pointerEvents:'none' }} />
                         <div style={{ position:'absolute', inset:0, border:'1px solid rgba(255,255,255,.2)', borderRadius:14, pointerEvents:'none' }} />
                         <span style={{ position:'relative' }}>{copied ? '✓' : '📋'}</span>
@@ -625,7 +624,7 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
                           <input autoComplete="off" type={type} placeholder={ph} value={val} onChange={e => set(e.target.value)} style={{ width:'100%', background:c.inputBg, border:`1px solid ${c.inputBorder}`, borderRadius:10, padding:'12px 14px', fontSize:14, color:c.text }} />
                         </div>
                       ))}
-                      <button onClick={updateProfile} style={{ padding:13, background:'linear-gradient(135deg,rgba(168,85,247,.8),rgba(110,30,190,.9))', border:'none', borderRadius:12, color:'#fff', fontSize:13, fontWeight:500, marginTop:4 }}>Salvar alterações</button>
+                      <button onClick={updateProfile} style={{ padding:13, background:'linear-gradient(135deg,rgba(249,115,22,.8),rgba(194,65,12,.9))', border:'none', borderRadius:12, color:'#fff', fontSize:13, fontWeight:500, marginTop:4 }}>Salvar alterações</button>
                     </>
                   )}
                   {settingsTab === 'password' && (
@@ -636,7 +635,7 @@ IMPORTANTE: Forneça sempre uma resposta/sugestão pronta que o closer pode usar
                           <input autoComplete="new-password" type="password" placeholder="••••••••" value={val} onChange={e => set(e.target.value)} style={{ width:'100%', background:c.inputBg, border:`1px solid ${c.inputBorder}`, borderRadius:10, padding:'12px 14px', fontSize:14, color:c.text }} />
                         </div>
                       ))}
-                      <button onClick={updatePassword} style={{ padding:13, background:'linear-gradient(135deg,rgba(168,85,247,.8),rgba(110,30,190,.9))', border:'none', borderRadius:12, color:'#fff', fontSize:13, fontWeight:500, marginTop:4 }}>Atualizar senha</button>
+                      <button onClick={updatePassword} style={{ padding:13, background:'linear-gradient(135deg,rgba(249,115,22,.8),rgba(194,65,12,.9))', border:'none', borderRadius:12, color:'#fff', fontSize:13, fontWeight:500, marginTop:4 }}>Atualizar senha</button>
                     </>
                   )}
                   {settingsMsg && (
