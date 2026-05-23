@@ -36,6 +36,7 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
+  const activeClientIdRef = useRef(null);
   const isDark = theme === 'dark';
 
   useEffect(() => {
@@ -54,6 +55,19 @@ export default function Home() {
   useEffect(() => {
     if (user) loadClients();
   }, [user]);
+
+  useEffect(() => {
+    activeClientIdRef.current = activeClient?.id ?? null;
+    if (!activeClient) {
+      setConversation([]);
+      setLastResponse('');
+      return;
+    }
+    const msgs = Array.isArray(activeClient.messages) ? activeClient.messages : [];
+    setConversation(msgs);
+    const lastAI = [...msgs].reverse().find(m => m.role === 'assistant');
+    setLastResponse(lastAI ? (typeof lastAI.content === 'string' ? lastAI.content : '') : '');
+  }, [activeClient?.id]);
 
   async function loadClients() {
     const { data, error } = await supabase
@@ -126,10 +140,6 @@ export default function Home() {
 
   function openClient(client) {
     setActiveClient(client);
-    const msgs = Array.isArray(client.messages) ? client.messages : [];
-    setConversation(msgs);
-    const lastAI = [...msgs].reverse().find(m => m.role === 'assistant');
-    setLastResponse(lastAI ? (typeof lastAI.content === 'string' ? lastAI.content : '') : '');
     setShowSidebar(false);
   }
 
@@ -152,6 +162,7 @@ export default function Home() {
     setIsThinking(true);
     setCopied(false);
     const now = new Date().toISOString();
+    const sendingClientId = activeClientIdRef.current;
 
     let apiContent;
     if (uploadedImageBase64) {
@@ -233,12 +244,14 @@ QUALIFICAÇÃO — usar antes de enviar proposta:
 
 Quando receber prints de conversa, analise e sugira resposta pronta, natural e estratégica. Responda sempre em português brasileiro.`,
           messages: newConv.map(m => ({ role: m.role, content: m.content })),
+          clientName: activeClient?.name,
         }),
       });
       const data = await res.json();
       const aiText = data.content?.[0]?.text || 'Erro ao gerar resposta.';
       const assistantMsg = { role: 'assistant', content: aiText, timestamp: new Date().toISOString() };
       const finalConv = [...newConv, assistantMsg];
+      if (activeClientIdRef.current !== sendingClientId) return;
       setConversation(finalConv);
       setLastResponse(aiText);
       await upsertClient(activeClient?.name, finalConv, activeClient?.id);
