@@ -241,6 +241,7 @@ REGRAS:
 - Nunca mais de 3 perguntas por mensagem.
 - Sempre quebrar o texto em parágrafos curtos.
 - Sem emojis. Zero. Nenhum.
+- Nunca assuma o tipo de evento. Se o cliente não informou se é casamento, formatura, aniversário ou outro evento, pergunte primeiro antes de qualquer outra coisa.
 
 Quando receber prints de conversa, analise e sugira resposta pronta, natural e estratégica. Responda sempre em português brasileiro.`,
           messages: newConv.map(m => ({ role: m.role, content: m.content })),
